@@ -1,0 +1,26 @@
+import type {Metadata} from 'next';
+import './globals.css'; // Global styles
+import { Cairo } from 'next/font/google';
+import { AppProvider } from '@/lib/store';
+import GlobalSearch from '@/components/GlobalSearch';
+import FloatingMenu from '@/components/FloatingMenu';
+
+const cairo = Cairo({ subsets: ['arabic'], variable: '--font-cairo' });
+
+export const metadata: Metadata = {
+  title: 'بصائر - متابعة دراسة وتفسير القرآن',
+  description: 'تطبيق بصائر لمتابعة دراسة وتفسير القرآن الكريم وتدوين الملاحظات',
+};
+
+export default function RootLayout({children}: {children: React.ReactNode}) {
+  return (
+    <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
+      <body className="font-sans bg-[#FDFBF7] dark:bg-[#121410] text-[#2C3E18] dark:text-[#E5E5D8] min-h-screen transition-colors duration-300" suppressHydrationWarning>
+        <AppProvider>
+          {children}
+          <FloatingMenu />
+        </AppProvider>
+      </body>
+    </html>
+  );
+}
