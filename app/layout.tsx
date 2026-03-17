@@ -4,6 +4,8 @@ import { Cairo } from 'next/font/google';
 import { AppProvider } from '@/lib/store';
 import GlobalSearch from '@/components/GlobalSearch';
 import FloatingMenu from '@/components/FloatingMenu';
+import BadgeNotification from '@/components/BadgeNotification';
+import BottomNav from '@/components/BottomNav';
 
 const cairo = Cairo({ subsets: ['arabic'], variable: '--font-cairo' });
 
@@ -19,6 +21,8 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <AppProvider>
           {children}
           <FloatingMenu />
+          <BottomNav />
+          <BadgeNotification />
         </AppProvider>
       </body>
     </html>

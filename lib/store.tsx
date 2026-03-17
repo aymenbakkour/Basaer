@@ -31,6 +31,7 @@ interface AppState {
   theme: Theme;
   studyPlan: string;
   customSuraOrder: number[];
+  userName: string;
 }
 
 interface AppContextType {
@@ -41,12 +42,14 @@ interface AppContextType {
   deleteNote: (suraId: number, noteId: string) => void;
   toggleTheme: () => void;
   updateStudyPlan: (plan: string, customOrder?: number[]) => void;
+  importData: (data: AppState) => void;
+  updateUserName: (name: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AppState>({ suras: {}, theme: 'light', studyPlan: 'default', customSuraOrder: [] });
+  const [state, setState] = useState<AppState>({ suras: {}, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '' });
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -79,6 +82,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!parsed.theme) parsed.theme = 'light';
       if (!parsed.studyPlan) parsed.studyPlan = 'default';
       if (!parsed.customSuraOrder) parsed.customSuraOrder = [];
+      if (parsed.userName === undefined) parsed.userName = '';
       
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setState(parsed);
@@ -96,7 +100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           totalAyahs: s.ayahs
         };
       });
-      setState({ suras: initialSuras, theme: 'light', studyPlan: 'default', customSuraOrder: [] });
+      setState({ suras: initialSuras, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '' });
     }
     setIsLoaded(true);
   }, []);
@@ -111,6 +115,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [state, isLoaded]);
+
+  const importData = (data: AppState) => {
+    setState(data);
+  };
+
+  const updateUserName = (name: string) => {
+    setState(prev => ({ ...prev, userName: name }));
+  };
 
   const updateStudyPlan = (plan: string, customOrder?: number[]) => {
     setState(prev => ({
@@ -189,7 +201,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   if (!isLoaded) return null; // Prevent hydration mismatch
 
   return (
-    <AppContext.Provider value={{ state, updateSuraStatus, updateSuraRating, updateNote, deleteNote, toggleTheme, updateStudyPlan }}>
+    <AppContext.Provider value={{ state, updateSuraStatus, updateSuraRating, updateNote, deleteNote, toggleTheme, updateStudyPlan, importData, updateUserName }}>
       {children}
     </AppContext.Provider>
   );

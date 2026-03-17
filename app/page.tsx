@@ -7,17 +7,64 @@ import { STUDY_PLANS, REVELATION_ORDER } from '@/lib/study-plans';
 import { NOTE_CATEGORIES, getCategoryById } from '@/lib/categories';
 import { MIRACLES_DATA } from '@/lib/miracles-data';
 import Link from 'next/link';
-import { BookOpen, CheckCircle, Clock, Star, Edit3, ChevronLeft, Download, User, ExternalLink, Settings, X, Moon, Sun, Calendar, FileText, BarChart2, Search, Map, ArrowUp, ArrowDown, Tag, Sparkles, ExternalLink as ExternalLinkIcon, Book } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Star, Edit3, ChevronLeft, Download, Upload, User, ExternalLink, Settings, X, Moon, Sun, Calendar, FileText, BarChart2, Search, Map, ArrowUp, ArrowDown, Tag, Sparkles, ExternalLink as ExternalLinkIcon, Book, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import GlobalSearch from '@/components/GlobalSearch';
+import WelcomeModal from '@/components/WelcomeModal';
+import TajweedSection from '@/components/TajweedSection';
+import AboutAppSection from '@/components/AboutAppSection';
+import DeveloperSection from '@/components/DeveloperSection';
+
+import { BADGES } from '@/lib/badges-data';
+import SurahBenefits from '@/components/SurahBenefits';
+import QuranDuas from '@/components/QuranDuas';
+
+function AchievementsList({ state }: { state: any }) {
+  return (
+    <>
+      {BADGES.map((badge) => {
+        const isEarned = badge.condition(state);
+        return (
+          <div 
+            key={badge.id} 
+            className={`p-6 rounded-2xl border ${isEarned ? 'border-[#556B2F] dark:border-[#A3B881] bg-white dark:bg-[#1A1D17]' : 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 opacity-60'} transition-all flex flex-col items-center text-center`}
+          >
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-4 ${isEarned ? badge.color : 'bg-gray-200 dark:bg-gray-800 grayscale'}`}>
+              {badge.icon}
+            </div>
+            <h3 className={`text-lg font-bold mb-2 ${isEarned ? 'text-[#2C3E18] dark:text-[#E5E5D8]' : 'text-gray-500 dark:text-gray-400'}`}>
+              {badge.title}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {badge.description}
+            </p>
+            {!isEarned && (
+              <div className="mt-4 text-xs font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+                لم تكتسب بعد
+              </div>
+            )}
+            {isEarned && (
+              <div className="mt-4 text-xs font-medium text-[#556B2F] dark:text-[#A3B881] flex items-center gap-1">
+                <CheckCircle size={14} />
+                تم الحصول عليها
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
 
 export default function Dashboard() {
-  const { state, toggleTheme, updateStudyPlan } = useAppContext();
-  const [activeSection, setActiveSection] = useState<'home' | 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles'>('home');
+  const { state, toggleTheme, updateStudyPlan, importData, updateUserName } = useAppContext();
+  const [activeSection, setActiveSection] = useState<'home' | 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles' | 'developer' | 'about-app' | 'tajweed' | 'achievements' | 'benefits' | 'duas'>('home');
   const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedMiracle, setExpandedMiracle] = useState<string | null>(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -26,7 +73,7 @@ export default function Dashboard() {
     // Check URL parameters for initial section
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
-    if (section === 'settings' || section === 'stats' || section === 'search' || section === 'plan' || section === 'categories' || section === 'miracles') {
+    if (section === 'settings' || section === 'stats' || section === 'search' || section === 'plan' || section === 'categories' || section === 'miracles' || section === 'developer' || section === 'about-app' || section === 'tajweed' || section === 'achievements' || section === 'benefits' || section === 'duas') {
       setActiveSection(section as any);
       window.history.replaceState({}, '', '/');
     }
@@ -37,6 +84,12 @@ export default function Dashboard() {
     const handleOpenPlan = () => setActiveSection('plan');
     const handleOpenCategories = () => setActiveSection('categories');
     const handleOpenMiracles = () => setActiveSection('miracles');
+    const handleOpenDeveloper = () => setActiveSection('developer');
+    const handleOpenAboutApp = () => setActiveSection('about-app');
+    const handleOpenTajweed = () => setActiveSection('tajweed');
+    const handleOpenAchievements = () => setActiveSection('achievements');
+    const handleOpenBenefits = () => setActiveSection('benefits');
+    const handleOpenDuas = () => setActiveSection('duas');
     const handleGoHome = () => setActiveSection('home');
 
     window.addEventListener('open-settings', handleOpenSettings);
@@ -45,6 +98,12 @@ export default function Dashboard() {
     window.addEventListener('open-plan', handleOpenPlan);
     window.addEventListener('open-categories', handleOpenCategories);
     window.addEventListener('open-miracles', handleOpenMiracles);
+    window.addEventListener('open-developer', handleOpenDeveloper);
+    window.addEventListener('open-about-app', handleOpenAboutApp);
+    window.addEventListener('open-tajweed', handleOpenTajweed);
+    window.addEventListener('open-achievements', handleOpenAchievements);
+    window.addEventListener('open-benefits', handleOpenBenefits);
+    window.addEventListener('open-duas', handleOpenDuas);
     window.addEventListener('go-home', handleGoHome);
 
     return () => {
@@ -54,9 +113,26 @@ export default function Dashboard() {
       window.removeEventListener('open-plan', handleOpenPlan);
       window.removeEventListener('open-categories', handleOpenCategories);
       window.removeEventListener('open-miracles', handleOpenMiracles);
+      window.removeEventListener('open-developer', handleOpenDeveloper);
+      window.removeEventListener('open-about-app', handleOpenAboutApp);
+      window.removeEventListener('open-tajweed', handleOpenTajweed);
+      window.removeEventListener('open-achievements', handleOpenAchievements);
+      window.removeEventListener('open-benefits', handleOpenBenefits);
+      window.removeEventListener('open-duas', handleOpenDuas);
       window.removeEventListener('go-home', handleGoHome);
     };
   }, []);
+
+  useEffect(() => {
+    if (mounted && state.userName === '') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowWelcomeModal(true);
+    }
+  }, [mounted, state.userName]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('section-changed', { detail: activeSection }));
+  }, [activeSection]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -94,6 +170,9 @@ export default function Dashboard() {
   const totalAyahsInQuran = 6236;
   const completedAyahs = completedSuras.reduce((acc, sura) => acc + sura.totalAyahs, 0);
   const quranCompletionPercentage = Math.round((completedAyahs / totalAyahsInQuran) * 100);
+
+  const earnedBadges = BADGES.filter(badge => badge.condition(state));
+  const latestBadge = earnedBadges.length > 0 ? earnedBadges[earnedBadges.length - 1] : null;
 
   const recentSuras = [...suras]
     .filter(s => s.lastModified > 0)
@@ -155,51 +234,129 @@ export default function Dashboard() {
     URL.revokeObjectURL(url);
   };
 
+  const handleBackup = () => {
+    const backupData = JSON.stringify(state, null, 2);
+    const blob = new Blob([backupData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `basaer_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRestore = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsedData = JSON.parse(content);
+        
+        if (parsedData && typeof parsedData === 'object' && 'suras' in parsedData) {
+          importData(parsedData);
+          alert('تم استعادة البيانات بنجاح');
+        } else {
+          alert('ملف النسخ الاحتياطي غير صالح');
+        }
+      } catch (error) {
+        alert('حدث خطأ أثناء قراءة الملف');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8">
+    <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24 space-y-8">
+      <WelcomeModal 
+        isOpen={showWelcomeModal} 
+        onSubmit={(name) => {
+          updateUserName(name);
+          setShowWelcomeModal(false);
+        }} 
+      />
+      
       <header className="bg-white dark:bg-[#1A1D17] p-6 rounded-3xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] relative overflow-hidden transition-colors">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-full -mr-10 -mt-10 opacity-50 dark:opacity-20"></div>
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-full -ml-8 -mb-8 opacity-50 dark:opacity-20"></div>
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center justify-between w-full md:w-auto">
-            <div>
-              <h1 className="text-3xl font-bold text-[#3A4D1A] dark:text-[#E5E5D8] flex items-center gap-2">
-                <BookOpen className="text-[#556B2F] dark:text-[#7A9A45]" size={32} />
+        <div className="relative z-10 flex flex-col gap-6">
+          {/* Top Row: Title and Date/Time */}
+          <div className="flex flex-row items-start justify-between w-full">
+            {/* Title */}
+            <div className="flex flex-col">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#3A4D1A] dark:text-[#E5E5D8] flex items-center gap-2">
+                <BookOpen className="text-[#556B2F] dark:text-[#7A9A45]" size={28} />
                 بصائر
               </h1>
-              <p className="text-[#556B2F] dark:text-[#A3B881] mt-2 font-medium">متابعة دراسة وتفسير القرآن الكريم</p>
+              <p className="text-[#556B2F] dark:text-[#A3B881] mt-1 text-xs md:text-sm font-medium">
+                {state.userName ? `مرحباً بك يا ${state.userName} في رحلة تدبر القرآن` : 'متابعة دراسة وتفسير القرآن الكريم'}
+              </p>
             </div>
-          </div>
 
-          <div className="hidden md:flex items-center gap-6">
+            {/* Date/Time (Top Left) */}
             {mounted && (
-              <div className="flex flex-col items-end gap-1 text-[#556B2F] dark:text-[#A3B881] border-r border-[#E5E5D8] dark:border-[#2C3E18] pr-6 mr-2">
-                <div className="flex items-center gap-2 font-medium text-sm">
-                  <Calendar size={16} />
-                  <span>{time.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              <div className="flex flex-col items-end text-[#556B2F] dark:text-[#A3B881] text-[10px] md:text-xs font-medium opacity-70 text-left">
+                <div className="flex items-center gap-1">
+                  <span>{time.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                  <Calendar size={12} />
                 </div>
-                <div className="flex items-center gap-2 font-bold text-xl text-[#3A4D1A] dark:text-[#E5E5D8]">
-                  <Clock size={18} className="text-[#556B2F] dark:text-[#A3B881]" />
+                <div className="flex items-center gap-1 mt-0.5">
                   <span dir="ltr">{time.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <Clock size={12} />
                 </div>
               </div>
             )}
           </div>
-          
-          {/* Mobile Clock */}
-          {mounted && (
-            <div className="md:hidden flex items-center justify-between text-[#556B2F] dark:text-[#A3B881] bg-[#FDFBF7] dark:bg-[#121410] p-3 rounded-xl border border-[#E5E5D8] dark:border-[#2C3E18]">
-              <div className="flex items-center gap-2 font-medium text-sm">
-                <Calendar size={16} />
-                <span>{time.toLocaleDateString('ar-EG', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+
+          {/* Bottom Row: Progress & Badge */}
+          <div className="flex flex-wrap items-center gap-3 bg-[#FDFBF7] dark:bg-[#121410] p-3 rounded-2xl border border-[#E5E5D8] dark:border-[#2C3E18] w-full mt-2">
+            
+            {/* Completed Suras */}
+            <div className="flex flex-1 md:flex-none items-center gap-3 px-2">
+              <div className="w-10 h-10 rounded-full bg-[#E5E5D8] dark:bg-[#2C3E18] flex items-center justify-center text-[#3A4D1A] dark:text-[#A3B881] shrink-0">
+                <CheckCircle size={20} />
               </div>
-              <div className="flex items-center gap-2 font-bold text-lg text-[#3A4D1A] dark:text-[#E5E5D8]">
-                <Clock size={16} className="text-[#556B2F] dark:text-[#A3B881]" />
-                <span dir="ltr">{time.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+              <div>
+                <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium">السور المكتملة</p>
+                <p className="text-sm md:text-lg font-bold text-[#3A4D1A] dark:text-[#E5E5D8]">{completedSuras.length} <span className="text-xs font-normal text-gray-400">/ 114</span></p>
               </div>
             </div>
-          )}
+
+            {/* Divider */}
+            <div className="w-px h-10 bg-[#E5E5D8] dark:bg-[#2C3E18]"></div>
+
+            {/* Latest Badge */}
+            <div className="flex flex-1 md:flex-none items-center gap-3 px-2">
+              {latestBadge ? (
+                <>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 ${latestBadge.color}`}>
+                    {latestBadge.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium">أحدث شارة</p>
+                    <p className="text-xs md:text-sm font-bold text-[#3A4D1A] dark:text-[#E5E5D8] truncate max-w-[90px] md:max-w-[120px]">{latestBadge.title}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 shrink-0">
+                    <Award size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium">أحدث شارة</p>
+                    <p className="text-xs md:text-sm font-medium text-gray-400 dark:text-gray-500 truncate">لا توجد بعد</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+          </div>
         </div>
       </header>
 
@@ -236,6 +393,22 @@ export default function Dashboard() {
             </div>
             
             <div className="p-6 space-y-4">
+              <div className="w-full flex flex-col md:flex-row md:items-center justify-between p-4 bg-[#FDFBF7] dark:bg-[#121410] border border-[#E5E5D8] dark:border-[#2C3E18] rounded-xl gap-4">
+                <div className="flex items-center gap-3 text-[#2C3E18] dark:text-[#E5E5D8] font-medium">
+                  <User size={20} />
+                  اسم المستخدم
+                </div>
+                <div className="flex-1 max-w-xs">
+                  <input
+                    type="text"
+                    value={state.userName}
+                    onChange={(e) => updateUserName(e.target.value)}
+                    placeholder="أدخل اسمك..."
+                    className="w-full bg-white dark:bg-[#1A1D17] border border-[#E5E5D8] dark:border-[#2C3E18] rounded-lg px-3 py-2 text-sm text-[#3A4D1A] dark:text-[#E5E5D8] focus:outline-none focus:ring-2 focus:ring-[#556B2F] dark:focus:ring-[#7A9A45] transition-all"
+                  />
+                </div>
+              </div>
+
               <button
                 onClick={toggleTheme}
                 className="w-full flex items-center justify-between p-4 bg-[#FDFBF7] dark:bg-[#121410] border border-[#E5E5D8] dark:border-[#2C3E18] rounded-xl hover:border-[#556B2F] dark:hover:border-[#7A9A45] transition-colors"
@@ -257,10 +430,39 @@ export default function Dashboard() {
                 className="w-full flex items-center justify-between p-4 bg-[#FDFBF7] dark:bg-[#121410] border border-[#E5E5D8] dark:border-[#2C3E18] rounded-xl hover:border-[#556B2F] dark:hover:border-[#7A9A45] transition-colors"
               >
                 <div className="flex items-center gap-3 text-[#2C3E18] dark:text-[#E5E5D8] font-medium">
-                  <Download size={20} />
-                  تصدير البيانات
+                  <FileText size={20} />
+                  تصدير تقرير نصي
                 </div>
               </button>
+
+              <button
+                onClick={() => {
+                  handleBackup();
+                  setActiveSection('home');
+                }}
+                className="w-full flex items-center justify-between p-4 bg-[#FDFBF7] dark:bg-[#121410] border border-[#E5E5D8] dark:border-[#2C3E18] rounded-xl hover:border-[#556B2F] dark:hover:border-[#7A9A45] transition-colors"
+              >
+                <div className="flex items-center gap-3 text-[#2C3E18] dark:text-[#E5E5D8] font-medium">
+                  <Download size={20} />
+                  نسخ احتياطي للبيانات
+                </div>
+              </button>
+
+              <label className="w-full flex items-center justify-between p-4 bg-[#FDFBF7] dark:bg-[#121410] border border-[#E5E5D8] dark:border-[#2C3E18] rounded-xl hover:border-[#556B2F] dark:hover:border-[#7A9A45] transition-colors cursor-pointer">
+                <div className="flex items-center gap-3 text-[#2C3E18] dark:text-[#E5E5D8] font-medium">
+                  <Upload size={20} />
+                  استعادة البيانات
+                </div>
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    handleRestore(e);
+                    setActiveSection('home');
+                  }}
+                />
+              </label>
 
               <a
                 href="https://www.behance.net/aymenbakkour"
@@ -814,7 +1016,7 @@ export default function Dashboard() {
                               {miracle.relatedAyahs.map((ayah, idx) => (
                                 <div key={idx} className="bg-white dark:bg-[#1A1D17] p-4 rounded-xl border border-[#E5E5D8] dark:border-[#2C3E18]">
                                   <p className="font-quran text-lg text-[#3A4D1A] dark:text-[#E5E5D8] leading-loose text-center mb-4">
-                                    "{ayah.text}"
+                                    &quot;{ayah.text}&quot;
                                   </p>
                                   <div className="flex items-center justify-between border-t border-[#E5E5D8] dark:border-[#2C3E18] pt-3">
                                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -850,6 +1052,82 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+          </motion.div>
+        )}
+
+        {activeSection === 'developer' && (
+          <DeveloperSection onBack={() => setActiveSection('home')} />
+        )}
+
+        {activeSection === 'about-app' && (
+          <AboutAppSection onBack={() => setActiveSection('home')} />
+        )}
+
+        {activeSection === 'tajweed' && (
+          <TajweedSection onBack={() => setActiveSection('home')} />
+        )}
+
+        {activeSection === 'achievements' && (
+          <motion.div
+            key="achievements"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="flex items-center gap-4 mb-8">
+              <button onClick={() => setActiveSection('home')} className="p-2 bg-white dark:bg-[#1A1D17] rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-[#2C3E18] transition-colors">
+                <ChevronLeft size={24} className="text-[#556B2F] dark:text-[#A3B881]" />
+              </button>
+              <h2 className="text-3xl font-bold text-[#2C3E18] dark:text-[#E5E5D8] font-quran">الإنجازات والشارات</h2>
+            </div>
+
+            <div className="bg-white dark:bg-[#1A1D17] rounded-3xl p-8 shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] mb-8">
+              <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
+                {state.userName ? `أحسنت يا ${state.userName}! ` : ''}
+                نظام الشارات يحفزك على الاستمرار في دراسة وتدبر القرآن الكريم. كلما تقدمت في دراستك، حصلت على شارات جديدة تزين ملفك الشخصي.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <AchievementsList state={state} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeSection === 'benefits' && (
+          <motion.div
+            key="benefits"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="flex items-center gap-4 mb-8">
+              <button onClick={() => setActiveSection('home')} className="p-2 bg-white dark:bg-[#1A1D17] rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-[#2C3E18] transition-colors">
+                <ChevronLeft size={24} className="text-[#556B2F] dark:text-[#A3B881]" />
+              </button>
+              <h2 className="text-3xl font-bold text-[#2C3E18] dark:text-[#E5E5D8] font-quran">فوائد السور</h2>
+            </div>
+            <SurahBenefits />
+          </motion.div>
+        )}
+
+        {activeSection === 'duas' && (
+          <motion.div
+            key="duas"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="flex items-center gap-4 mb-8">
+              <button onClick={() => setActiveSection('home')} className="p-2 bg-white dark:bg-[#1A1D17] rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-[#2C3E18] transition-colors">
+                <ChevronLeft size={24} className="text-[#556B2F] dark:text-[#A3B881]" />
+              </button>
+              <h2 className="text-3xl font-bold text-[#2C3E18] dark:text-[#E5E5D8] font-quran">أدعية قرآنية</h2>
+            </div>
+            <QuranDuas />
           </motion.div>
         )}
       </AnimatePresence>

@@ -34,7 +34,7 @@ export default function SuraPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6 pb-24">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1A1D17] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] sticky top-4 z-10 gap-4 transition-colors">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1A1D17] p-4 pr-20 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] sticky top-4 z-10 gap-4 transition-colors">
         <div className="flex items-center space-x-4 space-x-reverse">
           <Link href="/" className="p-2 hover:bg-[#F0F4E8] dark:hover:bg-[#2C3E18] rounded-full text-[#556B2F] dark:text-[#A3B881] transition-colors">
             <ArrowRight size={24} />
@@ -180,6 +180,7 @@ export default function SuraPage() {
         {showCelebration && (
           <IslamicCelebration 
             suraName={sura.name} 
+            userName={state.userName}
             onClose={() => setShowCelebration(false)} 
           />
         )}
@@ -188,7 +189,7 @@ export default function SuraPage() {
   );
 }
 
-function IslamicCelebration({ suraName, onClose }: { suraName: string, onClose: () => void }) {
+function IslamicCelebration({ suraName, userName, onClose }: { suraName: string, userName?: string, onClose: () => void }) {
   // Auto close after 8 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -273,7 +274,7 @@ function IslamicCelebration({ suraName, onClose }: { suraName: string, onClose: 
           transition={{ delay: 0.3 }}
           className="text-4xl font-bold text-[#D4AF37] mb-4 font-serif"
         >
-          ما شاء الله!
+          {userName ? `ما شاء الله يا ${userName}!` : 'ما شاء الله!'}
         </motion.h2>
         
         <motion.p 
