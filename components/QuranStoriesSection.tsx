@@ -5,14 +5,19 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, BookOpen, ArrowLeft, Lightbulb, MapPin } from 'lucide-react';
 import { QURAN_STORIES } from '@/lib/quran-stories-data';
 import { useRouter } from 'next/navigation';
+import { useAppContext } from '@/lib/store';
 
 export default function QuranStoriesSection({ onBack }: { onBack: () => void }) {
   const [activeStory, setActiveStory] = useState<string>(QURAN_STORIES[0].id);
   const router = useRouter();
+  const { markStoryPondered } = useAppContext();
 
   const currentStory = QURAN_STORIES.find(s => s.id === activeStory);
 
   const handleStartPondering = (suraId: number, startAyah: number, endAyah: number) => {
+    if (currentStory) {
+      markStoryPondered(currentStory.id);
+    }
     // Navigate to the sura page, potentially passing start/end ayahs as query params if supported
     router.push(`/sura/${suraId}?start=${startAyah}&end=${endAyah}`);
   };

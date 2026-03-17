@@ -84,5 +84,35 @@ export const BADGES: Badge[] = [
       const highRating = Object.values(state.suras).filter((s: any) => s.understandingRating === 5);
       return highRating.length >= 5;
     }
+  },
+  {
+    id: 'first_story',
+    title: 'بداية التدبر',
+    description: 'بدأت بتدبر أول قصة من قصص القرآن الكريم',
+    icon: '📖',
+    color: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
+    condition: (state) => {
+      return (state.ponderedStories?.length || 0) >= 1;
+    }
+  },
+  {
+    id: 'ten_stories',
+    title: 'مستكشف القصص',
+    description: 'تدبرت 10 قصص من قصص القرآن الكريم',
+    icon: '🧭',
+    color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300',
+    condition: (state) => {
+      return (state.ponderedStories?.length || 0) >= 10;
+    }
+  },
+  {
+    id: 'all_stories',
+    title: 'خبير القصص',
+    description: 'تدبرت جميع قصص القرآن الكريم',
+    icon: '🏆',
+    color: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
+    condition: (state) => {
+      return (state.ponderedStories?.length || 0) >= 28;
+    }
   }
 ];

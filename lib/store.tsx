@@ -32,6 +32,7 @@ interface AppState {
   studyPlan: string;
   customSuraOrder: number[];
   userName: string;
+  ponderedStories: string[];
 }
 
 interface AppContextType {
@@ -44,12 +45,13 @@ interface AppContextType {
   updateStudyPlan: (plan: string, customOrder?: number[]) => void;
   importData: (data: AppState) => void;
   updateUserName: (name: string) => void;
+  markStoryPondered: (storyId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AppState>({ suras: {}, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '' });
+  const [state, setState] = useState<AppState>({ suras: {}, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [] });
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -83,6 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!parsed.studyPlan) parsed.studyPlan = 'default';
       if (!parsed.customSuraOrder) parsed.customSuraOrder = [];
       if (parsed.userName === undefined) parsed.userName = '';
+      if (!parsed.ponderedStories) parsed.ponderedStories = [];
       
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setState(parsed);
@@ -100,7 +103,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           totalAyahs: s.ayahs
         };
       });
-      setState({ suras: initialSuras, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '' });
+      setState({ suras: initialSuras, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [] });
     }
     setIsLoaded(true);
   }, []);
@@ -198,10 +201,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const markStoryPondered = (storyId: string) => {
+    setState(prev => {
+      if (prev.ponderedStories?.includes(storyId)) return prev;
+      return {
+        ...prev,
+        ponderedStories: [...(prev.ponderedStories || []), storyId]
+      };
+    });
+  };
+
   if (!isLoaded) return null; // Prevent hydration mismatch
 
   return (
-    <AppContext.Provider value={{ state, updateSuraStatus, updateSuraRating, updateNote, deleteNote, toggleTheme, updateStudyPlan, importData, updateUserName }}>
+    <AppContext.Provider value={{ state, updateSuraStatus, updateSuraRating, updateNote, deleteNote, toggleTheme, updateStudyPlan, importData, updateUserName, markStoryPondered }}>
       {children}
     </AppContext.Provider>
   );
