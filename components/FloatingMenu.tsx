@@ -56,6 +56,7 @@ export default function FloatingMenu() {
   if (pathname === '/') {
     menuItems.unshift({ icon: Award, label: 'الإنجازات والشارات', action: () => handleAction('achievements') });
     menuItems.unshift({ icon: Sparkles, label: 'الإعجاز القرآني', action: () => handleAction('miracles') });
+    menuItems.unshift({ icon: BookOpen, label: 'قصص القرآن', action: () => handleAction('stories') });
     menuItems.unshift({ icon: BookOpenCheck, label: 'أحكام التجويد', action: () => handleAction('tajweed') });
     menuItems.unshift({ icon: Book, label: 'أدعية قرآنية', action: () => handleAction('duas') });
     menuItems.unshift({ icon: Heart, label: 'فوائد السور', action: () => handleAction('benefits') });

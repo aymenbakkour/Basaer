@@ -14,6 +14,7 @@ import WelcomeModal from '@/components/WelcomeModal';
 import TajweedSection from '@/components/TajweedSection';
 import AboutAppSection from '@/components/AboutAppSection';
 import DeveloperSection from '@/components/DeveloperSection';
+import QuranStoriesSection from '@/components/QuranStoriesSection';
 
 import { BADGES } from '@/lib/badges-data';
 import SurahBenefits from '@/components/SurahBenefits';
@@ -59,7 +60,7 @@ function AchievementsList({ state }: { state: any }) {
 
 export default function Dashboard() {
   const { state, toggleTheme, updateStudyPlan, importData, updateUserName } = useAppContext();
-  const [activeSection, setActiveSection] = useState<'home' | 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles' | 'developer' | 'about-app' | 'tajweed' | 'achievements' | 'benefits' | 'duas'>('home');
+  const [activeSection, setActiveSection] = useState<'home' | 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles' | 'developer' | 'about-app' | 'tajweed' | 'achievements' | 'benefits' | 'duas' | 'stories'>('home');
   const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -73,7 +74,7 @@ export default function Dashboard() {
     // Check URL parameters for initial section
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
-    if (section === 'settings' || section === 'stats' || section === 'search' || section === 'plan' || section === 'categories' || section === 'miracles' || section === 'developer' || section === 'about-app' || section === 'tajweed' || section === 'achievements' || section === 'benefits' || section === 'duas') {
+    if (section === 'settings' || section === 'stats' || section === 'search' || section === 'plan' || section === 'categories' || section === 'miracles' || section === 'developer' || section === 'about-app' || section === 'tajweed' || section === 'achievements' || section === 'benefits' || section === 'duas' || section === 'stories') {
       setActiveSection(section as any);
       window.history.replaceState({}, '', '/');
     }
@@ -90,6 +91,7 @@ export default function Dashboard() {
     const handleOpenAchievements = () => setActiveSection('achievements');
     const handleOpenBenefits = () => setActiveSection('benefits');
     const handleOpenDuas = () => setActiveSection('duas');
+    const handleOpenStories = () => setActiveSection('stories');
     const handleGoHome = () => setActiveSection('home');
 
     window.addEventListener('open-settings', handleOpenSettings);
@@ -104,6 +106,7 @@ export default function Dashboard() {
     window.addEventListener('open-achievements', handleOpenAchievements);
     window.addEventListener('open-benefits', handleOpenBenefits);
     window.addEventListener('open-duas', handleOpenDuas);
+    window.addEventListener('open-stories', handleOpenStories);
     window.addEventListener('go-home', handleGoHome);
 
     return () => {
@@ -119,6 +122,7 @@ export default function Dashboard() {
       window.removeEventListener('open-achievements', handleOpenAchievements);
       window.removeEventListener('open-benefits', handleOpenBenefits);
       window.removeEventListener('open-duas', handleOpenDuas);
+      window.removeEventListener('open-stories', handleOpenStories);
       window.removeEventListener('go-home', handleGoHome);
     };
   }, []);
@@ -1065,6 +1069,10 @@ export default function Dashboard() {
 
         {activeSection === 'tajweed' && (
           <TajweedSection onBack={() => setActiveSection('home')} />
+        )}
+
+        {activeSection === 'stories' && (
+          <QuranStoriesSection onBack={() => setActiveSection('home')} />
         )}
 
         {activeSection === 'achievements' && (
