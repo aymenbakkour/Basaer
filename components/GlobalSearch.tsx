@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, X, BookOpen, FileText, Users, Book, ArrowLeft } from 'lucide-react';
+import { Search, X, BookOpen, FileText, Users, Book, ArrowLeft, Sparkles, BookOpenCheck, Heart } from 'lucide-react';
 import { useAppContext } from '@/lib/store';
 import { SURAS_DATA } from '@/lib/suras-data';
+import { QURAN_STORIES } from '@/lib/quran-stories-data';
+import { MIRACLES_DATA } from '@/lib/miracles-data';
+import { TAJWEED_RULES } from '@/lib/tajweed-data';
+import { SURAH_BENEFITS_DATA } from '@/lib/surah-benefits-data';
+import { QURAN_DUAS_DATA } from '@/lib/quran-duas-data';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -60,13 +65,86 @@ export default function GlobalSearch() {
       }
     });
 
-    return results.slice(0, 15); // Limit to 15 results
+    // Search Stories
+    QURAN_STORIES.forEach(story => {
+      if (story.title.includes(lowerQuery) || story.description.includes(lowerQuery)) {
+        results.push({
+          type: 'story',
+          id: story.id,
+          title: story.title,
+          subtitle: story.description,
+          icon: <BookOpen size={18} className="text-[#556B2F] dark:text-[#A3B881]" />
+        });
+      }
+    });
+
+    // Search Miracles
+    MIRACLES_DATA.forEach(miracle => {
+      if (miracle.title.includes(lowerQuery) || miracle.summary.includes(lowerQuery) || miracle.content.includes(lowerQuery)) {
+        results.push({
+          type: 'miracles',
+          id: miracle.id,
+          title: miracle.title,
+          subtitle: miracle.summary,
+          icon: <Sparkles size={18} className="text-[#556B2F] dark:text-[#A3B881]" />
+        });
+      }
+    });
+
+    // Search Tajweed
+    TAJWEED_RULES.forEach(rule => {
+      if (rule.title.includes(lowerQuery) || rule.description.includes(lowerQuery)) {
+        results.push({
+          type: 'tajweed',
+          id: rule.id,
+          title: rule.title,
+          subtitle: rule.description,
+          icon: <BookOpenCheck size={18} className="text-[#556B2F] dark:text-[#A3B881]" />
+        });
+      }
+    });
+
+    // Search Benefits
+    SURAH_BENEFITS_DATA.forEach(benefit => {
+      if (benefit.sura.includes(lowerQuery) || benefit.benefits.some(b => b.includes(lowerQuery))) {
+        results.push({
+          type: 'benefits',
+          id: benefit.id,
+          title: benefit.sura,
+          subtitle: benefit.benefits[0],
+          icon: <Heart size={18} className="text-[#556B2F] dark:text-[#A3B881]" />
+        });
+      }
+    });
+
+    // Search Duas
+    QURAN_DUAS_DATA.forEach(dua => {
+      if (dua.title.includes(lowerQuery) || dua.dua.includes(lowerQuery)) {
+        results.push({
+          type: 'duas',
+          id: dua.id,
+          title: dua.title,
+          subtitle: dua.dua,
+          icon: <Book size={18} className="text-[#556B2F] dark:text-[#A3B881]" />
+        });
+      }
+    });
+
+    return results.slice(0, 20); // Limit to 20 results
   };
 
   const results = getResults();
 
   const handleSelect = (result: any) => {
-    router.push(`/sura/${result.id}`);
+    if (result.type === 'sura' || result.type === 'note') {
+      router.push(`/sura/${result.id}`);
+    } else if (result.type === 'story') {
+      router.push(`/?section=stories&storyId=${result.id}`);
+      window.dispatchEvent(new CustomEvent('open-stories'));
+    } else {
+      router.push(`/?section=${result.type}`);
+      window.dispatchEvent(new CustomEvent(`open-${result.type}`));
+    }
   };
 
   const handleClose = () => {

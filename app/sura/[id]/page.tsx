@@ -2,12 +2,15 @@
 
 import { useAppContext, AyahStatus, Note } from '@/lib/store';
 import { SURAS_DATA } from '@/lib/suras-data';
+import { getStoryIdForKeyword } from '@/lib/story-mapping';
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Save, Star, CheckCircle2, AlertCircle, HelpCircle, Edit3, Plus, Trash2, Info, MapPin, List, BookOpen, Layers, Users, Book, FileText, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { NOTE_CATEGORIES, getCategoryById } from '@/lib/categories';
+import StudyTimer from '@/components/StudyTimer';
+import { useTimerContext } from '@/components/TimerContext';
 
 export default function SuraPage() {
   const params = useParams();
@@ -34,6 +37,7 @@ export default function SuraPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6 pb-24">
+      <StudyTimer compact />
       <header className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1A1D17] p-4 pr-20 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] sticky top-4 z-10 gap-4 transition-colors">
         <div className="flex items-center space-x-4 space-x-reverse">
           <Link href="/" className="p-2 hover:bg-[#F0F4E8] dark:hover:bg-[#2C3E18] rounded-full text-[#556B2F] dark:text-[#A3B881] transition-colors">
@@ -87,14 +91,46 @@ export default function SuraPage() {
                 <div className="flex items-start gap-2 text-sm">
                   <Users size={16} className="text-[#556B2F] dark:text-[#A3B881] mt-0.5 shrink-0" />
                   <span className="text-gray-600 dark:text-gray-400 font-medium">الأشخاص:</span>
-                  <span className="text-[#3A4D1A] dark:text-[#E5E5D8]">{suraInfo.people.join('، ')}</span>
+                  <div className="flex flex-wrap gap-1">
+                    {suraInfo.people.map((person, idx) => {
+                      const storyId = getStoryIdForKeyword(person);
+                      return (
+                        <span key={idx} className="text-[#3A4D1A] dark:text-[#E5E5D8]">
+                          {storyId ? (
+                            <Link href={`/?section=stories&storyId=${storyId}`} className="hover:text-[#556B2F] dark:hover:text-[#A3B881] hover:underline transition-colors">
+                              {person}
+                            </Link>
+                          ) : (
+                            person
+                          )}
+                          {idx < suraInfo.people!.length - 1 && '، '}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
               {suraInfo.stories && (
                 <div className="flex items-start gap-2 text-sm">
                   <Book size={16} className="text-[#556B2F] dark:text-[#A3B881] mt-0.5 shrink-0" />
                   <span className="text-gray-600 dark:text-gray-400 font-medium">القصص:</span>
-                  <span className="text-[#3A4D1A] dark:text-[#E5E5D8]">{suraInfo.stories.join('، ')}</span>
+                  <div className="flex flex-wrap gap-1">
+                    {suraInfo.stories.map((story, idx) => {
+                      const storyId = getStoryIdForKeyword(story);
+                      return (
+                        <span key={idx} className="text-[#3A4D1A] dark:text-[#E5E5D8]">
+                          {storyId ? (
+                            <Link href={`/?section=stories&storyId=${storyId}`} className="hover:text-[#556B2F] dark:hover:text-[#A3B881] hover:underline transition-colors">
+                              {story}
+                            </Link>
+                          ) : (
+                            story
+                          )}
+                          {idx < suraInfo.stories!.length - 1 && '، '}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -331,6 +367,7 @@ function NoteCard({ suraId, initialNote, isNew = false, onClose, updateNote, del
   const [status, setStatus] = useState<AyahStatus>(initialNote?.status || 'none');
   const [category, setCategory] = useState<string>(initialNote?.category || 'general');
   const [isEditing, setIsEditing] = useState(isNew);
+  const { setHasUnsavedNote } = useTimerContext();
 
   useEffect(() => {
     if (!isNew) {
@@ -342,7 +379,12 @@ function NoteCard({ suraId, initialNote, isNew = false, onClose, updateNote, del
     }
   }, [initialNote, isNew]);
 
-  const handleSave = () => {
+  useEffect(() => {
+    setHasUnsavedNote(isEditing);
+    return () => setHasUnsavedNote(false);
+  }, [isEditing, setHasUnsavedNote]);
+
+  const handleSave = useCallback(() => {
     if (title.trim() === '' && text.trim() === '') {
       if (isNew && onClose) onClose();
       return;
@@ -356,7 +398,34 @@ function NoteCard({ suraId, initialNote, isNew = false, onClose, updateNote, del
     } else {
       setIsEditing(false);
     }
-  };
+  }, [title, text, isNew, onClose, initialNote, suraId, status, category, updateNote]);
+
+  useEffect(() => {
+    const handleGlobalSave = () => {
+      if (isEditing) {
+        handleSave();
+      }
+    };
+    const handleGlobalDiscard = () => {
+      if (isEditing) {
+        if (isNew && onClose) {
+          onClose();
+        } else {
+          setTitle(initialNote?.title || '');
+          setText(initialNote?.text || '');
+          setStatus(initialNote?.status || 'none');
+          setCategory(initialNote?.category || 'general');
+          setIsEditing(false);
+        }
+      }
+    };
+    window.addEventListener('save-note', handleGlobalSave);
+    window.addEventListener('discard-note', handleGlobalDiscard);
+    return () => {
+      window.removeEventListener('save-note', handleGlobalSave);
+      window.removeEventListener('discard-note', handleGlobalDiscard);
+    };
+  }, [isEditing, title, text, status, category, initialNote, isNew, onClose, handleSave]);
 
   const handleDelete = () => {
     if (initialNote?.id) {
@@ -396,6 +465,19 @@ function NoteCard({ suraId, initialNote, isNew = false, onClose, updateNote, del
         </span>
       </div>
       
+      <div className="mb-3">
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full p-3 bg-[#FDFBF7] dark:bg-[#121410] border border-[#E5E5D8] dark:border-[#2C3E18] text-[#2C3E18] dark:text-[#E5E5D8] rounded-lg focus:ring-2 focus:ring-[#556B2F] dark:focus:ring-[#7A9A45] focus:border-transparent outline-none transition-colors"
+          dir="rtl"
+        >
+          {NOTE_CATEGORIES.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </select>
+      </div>
+
       <input
         type="text"
         value={title}
@@ -412,26 +494,6 @@ function NoteCard({ suraId, initialNote, isNew = false, onClose, updateNote, del
         className="w-full p-3 bg-[#FDFBF7] dark:bg-[#121410] border border-[#E5E5D8] dark:border-[#2C3E18] text-[#2C3E18] dark:text-[#E5E5D8] rounded-lg focus:ring-2 focus:ring-[#556B2F] dark:focus:ring-[#7A9A45] focus:border-transparent resize-none min-h-[120px] text-sm transition-colors mb-3"
         dir="rtl"
       />
-
-      <div className="flex items-center gap-2 mb-4 bg-[#FDFBF7] dark:bg-[#121410] p-3 rounded-lg border border-[#E5E5D8] dark:border-[#2C3E18]">
-        <Tag size={16} className="text-gray-500" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">التصنيف:</span>
-        <div className="flex flex-wrap gap-2 mr-2">
-          {NOTE_CATEGORIES.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setCategory(cat.id)}
-              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
-                category === cat.id 
-                  ? 'bg-[#556B2F] text-white dark:bg-[#7A9A45]' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-      </div>
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 gap-4">
         <div className="flex flex-wrap gap-2">

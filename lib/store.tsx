@@ -7,6 +7,13 @@ export type SuraStatus = 'not_started' | 'studying' | 'completed';
 export type AyahStatus = 'understood' | 'needs_review' | 'not_understood' | 'none';
 export type Theme = 'light' | 'dark';
 
+export interface ActionLog {
+  id: string;
+  action: string;
+  details: string;
+  timestamp: number;
+}
+
 export interface Note {
   id: string;
   title: string;
@@ -26,6 +33,12 @@ export interface Sura {
   totalAyahs: number;
 }
 
+export interface StudySession {
+  id: string;
+  durationMinutes: number;
+  timestamp: number;
+}
+
 interface AppState {
   suras: Record<number, Sura>;
   theme: Theme;
@@ -33,10 +46,14 @@ interface AppState {
   customSuraOrder: number[];
   userName: string;
   ponderedStories: string[];
+  hasSeenTour: boolean;
+  actionLogs: ActionLog[];
+  studySessions: StudySession[];
 }
 
 interface AppContextType {
   state: AppState;
+  isLoaded: boolean;
   updateSuraStatus: (id: number, status: SuraStatus) => void;
   updateSuraRating: (id: number, rating: number) => void;
   updateNote: (suraId: number, noteId: string, title: string, text: string, status: AyahStatus, category?: string) => void;
@@ -46,12 +63,15 @@ interface AppContextType {
   importData: (data: AppState) => void;
   updateUserName: (name: string) => void;
   markStoryPondered: (storyId: string) => void;
+  setHasSeenTour: (seen: boolean) => void;
+  logAction: (action: string, details: string) => void;
+  addStudySession: (durationMinutes: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AppState>({ suras: {}, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [] });
+  const [state, setState] = useState<AppState>({ suras: {}, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [], hasSeenTour: false, actionLogs: [], studySessions: [] });
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -86,6 +106,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!parsed.customSuraOrder) parsed.customSuraOrder = [];
       if (parsed.userName === undefined) parsed.userName = '';
       if (!parsed.ponderedStories) parsed.ponderedStories = [];
+      if (parsed.hasSeenTour === undefined) parsed.hasSeenTour = false;
+      if (!parsed.actionLogs) parsed.actionLogs = [];
+      if (!parsed.studySessions) parsed.studySessions = [];
       
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setState(parsed);
@@ -103,7 +126,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           totalAyahs: s.ayahs
         };
       });
-      setState({ suras: initialSuras, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [] });
+      setState({ suras: initialSuras, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [], hasSeenTour: false, actionLogs: [], studySessions: [] });
     }
     setIsLoaded(true);
   }, []);
@@ -124,16 +147,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUserName = (name: string) => {
-    setState(prev => ({ ...prev, userName: name }));
+    setState(prev => ({ 
+      ...prev, 
+      userName: name,
+      actionLogs: [createLog('تحديث الاسم', `تم تحديث اسم المستخدم إلى ${name}`), ...(prev.actionLogs || [])]
+    }));
   };
 
   const updateStudyPlan = (plan: string, customOrder?: number[]) => {
     setState(prev => ({
       ...prev,
       studyPlan: plan,
-      customSuraOrder: customOrder !== undefined ? customOrder : prev.customSuraOrder
+      customSuraOrder: customOrder !== undefined ? customOrder : prev.customSuraOrder,
+      actionLogs: [createLog('تحديث خطة الدراسة', `تم تغيير خطة الدراسة إلى ${plan}`), ...(prev.actionLogs || [])]
     }));
   };
+
+  const createLog = (action: string, details: string) => ({
+    id: Math.random().toString(36).substring(2, 9),
+    action,
+    details,
+    timestamp: Date.now()
+  });
 
   const updateSuraStatus = (id: number, status: SuraStatus) => {
     setState(prev => ({
@@ -141,7 +176,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       suras: {
         ...prev.suras,
         [id]: { ...prev.suras[id], status, lastModified: Date.now() }
-      }
+      },
+      actionLogs: [createLog('تحديث حالة السورة', `تم تغيير حالة سورة رقم ${id} إلى ${status === 'completed' ? 'مكتملة' : status === 'studying' ? 'قيد الدراسة' : 'لم تبدأ'}`), ...(prev.actionLogs || [])]
     }));
   };
 
@@ -151,7 +187,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       suras: {
         ...prev.suras,
         [id]: { ...prev.suras[id], understandingRating: rating, lastModified: Date.now() }
-      }
+      },
+      actionLogs: [createLog('تقييم الفهم', `تم تقييم فهم سورة رقم ${id} بـ ${rating} نجوم`), ...(prev.actionLogs || [])]
     }));
   };
 
@@ -159,6 +196,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState(prev => {
       const sura = prev.suras[suraId];
       const newNotes = { ...sura.notes };
+      const isNew = !newNotes[noteId];
       newNotes[noteId] = { 
         id: noteId, 
         title, 
@@ -173,7 +211,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         suras: {
           ...prev.suras,
           [suraId]: { ...sura, notes: newNotes, lastModified: Date.now() }
-        }
+        },
+        actionLogs: [createLog(isNew ? 'إضافة ملاحظة' : 'تعديل ملاحظة', `في سورة رقم ${suraId}: ${title || 'بدون عنوان'}`), ...(prev.actionLogs || [])]
       };
     });
   };
@@ -182,6 +221,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState(prev => {
       const sura = prev.suras[suraId];
       const newNotes = { ...sura.notes };
+      const noteTitle = newNotes[noteId]?.title || 'بدون عنوان';
       delete newNotes[noteId];
       
       return {
@@ -189,7 +229,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         suras: {
           ...prev.suras,
           [suraId]: { ...sura, notes: newNotes, lastModified: Date.now() }
-        }
+        },
+        actionLogs: [createLog('حذف ملاحظة', `تم حذف ملاحظة "${noteTitle}" من سورة رقم ${suraId}`), ...(prev.actionLogs || [])]
       };
     });
   };
@@ -197,7 +238,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = () => {
     setState(prev => ({
       ...prev,
-      theme: prev.theme === 'light' ? 'dark' : 'light'
+      theme: prev.theme === 'light' ? 'dark' : 'light',
+      actionLogs: [createLog('تغيير المظهر', `تم التبديل إلى المظهر ${prev.theme === 'light' ? 'الداكن' : 'الفاتح'}`), ...(prev.actionLogs || [])]
     }));
   };
 
@@ -206,15 +248,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (prev.ponderedStories?.includes(storyId)) return prev;
       return {
         ...prev,
-        ponderedStories: [...(prev.ponderedStories || []), storyId]
+        ponderedStories: [...(prev.ponderedStories || []), storyId],
+        actionLogs: [createLog('تدبر قصة', `تم إتمام تدبر القصة: ${storyId}`), ...(prev.actionLogs || [])]
       };
     });
+  };
+
+  const setHasSeenTour = (seen: boolean) => {
+    setState(prev => ({ 
+      ...prev, 
+      hasSeenTour: seen,
+      actionLogs: seen ? [createLog('إتمام الجولة', 'تم إتمام الجولة التعريفية للتطبيق'), ...(prev.actionLogs || [])] : prev.actionLogs
+    }));
+  };
+
+  const logAction = (action: string, details: string) => {
+    setState(prev => ({
+      ...prev,
+      actionLogs: [
+        {
+          id: Math.random().toString(36).substring(2, 9),
+          action,
+          details,
+          timestamp: Date.now()
+        },
+        ...(prev.actionLogs || [])
+      ]
+    }));
+  };
+
+  const addStudySession = (durationMinutes: number) => {
+    setState(prev => ({
+      ...prev,
+      studySessions: [
+        ...(prev.studySessions || []),
+        {
+          id: Math.random().toString(36).substring(2, 9),
+          durationMinutes,
+          timestamp: Date.now()
+        }
+      ],
+      actionLogs: [createLog('جلسة دراسة', `تم إكمال جلسة دراسة لمدة ${durationMinutes} دقيقة`), ...(prev.actionLogs || [])]
+    }));
   };
 
   if (!isLoaded) return null; // Prevent hydration mismatch
 
   return (
-    <AppContext.Provider value={{ state, updateSuraStatus, updateSuraRating, updateNote, deleteNote, toggleTheme, updateStudyPlan, importData, updateUserName, markStoryPondered }}>
+    <AppContext.Provider value={{ state, isLoaded, updateSuraStatus, updateSuraRating, updateNote, deleteNote, toggleTheme, updateStudyPlan, importData, updateUserName, markStoryPondered, setHasSeenTour, logAction, addStudySession }}>
       {children}
     </AppContext.Provider>
   );

@@ -11,20 +11,30 @@ export default function BadgeNotification() {
   const { state } = useAppContext();
   const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
   const [currentNotification, setCurrentNotification] = useState<any | null>(null);
-  const isInitialMount = useRef(true);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     // Load previously earned badges from localStorage
     const saved = localStorage.getItem('earnedBadges');
     if (saved) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEarnedBadges(JSON.parse(saved));
+    } else {
+      // If no saved badges, initialize with currently earned badges to prevent initial spam
+      const initialEarned: string[] = [];
+      BADGES.forEach((badge) => {
+        if (badge.condition(state)) {
+          initialEarned.push(badge.id);
+        }
+      });
+      setEarnedBadges(initialEarned);
+      localStorage.setItem('earnedBadges', JSON.stringify(initialEarned));
     }
-    isInitialMount.current = false;
-  }, []);
+    setIsLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   useEffect(() => {
-    if (isInitialMount.current) return;
+    if (!isLoaded) return;
 
     const newlyEarned: any[] = [];
     const updatedEarnedBadges = [...earnedBadges];
@@ -37,7 +47,6 @@ export default function BadgeNotification() {
     });
 
     if (newlyEarned.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEarnedBadges(updatedEarnedBadges);
       localStorage.setItem('earnedBadges', JSON.stringify(updatedEarnedBadges));
       
@@ -57,7 +66,7 @@ export default function BadgeNotification() {
         setCurrentNotification(null);
       }, 5000);
     }
-  }, [state, earnedBadges]);
+  }, [state, earnedBadges, isLoaded]);
 
   return (
     <AnimatePresence>

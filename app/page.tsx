@@ -11,10 +11,14 @@ import { BookOpen, CheckCircle, Clock, Star, Edit3, ChevronLeft, Download, Uploa
 import { motion, AnimatePresence } from 'motion/react';
 import GlobalSearch from '@/components/GlobalSearch';
 import WelcomeModal from '@/components/WelcomeModal';
+import OnboardingTour from '@/components/OnboardingTour';
+import StudyTimer from '@/components/StudyTimer';
+import StudyCalendar from '@/components/StudyCalendar';
 import TajweedSection from '@/components/TajweedSection';
 import AboutAppSection from '@/components/AboutAppSection';
 import DeveloperSection from '@/components/DeveloperSection';
 import QuranStoriesSection from '@/components/QuranStoriesSection';
+import ActionLogSection from '@/components/ActionLogSection';
 
 import { BADGES } from '@/lib/badges-data';
 import SurahBenefits from '@/components/SurahBenefits';
@@ -59,13 +63,16 @@ function AchievementsList({ state }: { state: any }) {
 }
 
 export default function Dashboard() {
-  const { state, toggleTheme, updateStudyPlan, importData, updateUserName } = useAppContext();
-  const [activeSection, setActiveSection] = useState<'home' | 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles' | 'developer' | 'about-app' | 'tajweed' | 'achievements' | 'benefits' | 'duas' | 'stories'>('home');
+  const { state, toggleTheme, updateStudyPlan, importData, updateUserName, setHasSeenTour } = useAppContext();
+  const [activeSection, setActiveSection] = useState<'home' | 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles' | 'developer' | 'about-app' | 'tajweed' | 'achievements' | 'benefits' | 'duas' | 'stories' | 'index' | 'action-log'>('home');
   const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedMiracle, setExpandedMiracle] = useState<string | null>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const [initialStoryId, setInitialStoryId] = useState<string | null>(null);
+  const [indexSearchQuery, setIndexSearchQuery] = useState('');
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -74,7 +81,11 @@ export default function Dashboard() {
     // Check URL parameters for initial section
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section');
-    if (section === 'settings' || section === 'stats' || section === 'search' || section === 'plan' || section === 'categories' || section === 'miracles' || section === 'developer' || section === 'about-app' || section === 'tajweed' || section === 'achievements' || section === 'benefits' || section === 'duas' || section === 'stories') {
+    const storyId = params.get('storyId');
+    if (storyId) {
+      setInitialStoryId(storyId);
+    }
+    if (section === 'settings' || section === 'stats' || section === 'search' || section === 'plan' || section === 'categories' || section === 'miracles' || section === 'developer' || section === 'about-app' || section === 'tajweed' || section === 'achievements' || section === 'benefits' || section === 'duas' || section === 'stories' || section === 'index' || section === 'action-log') {
       setActiveSection(section as any);
       window.history.replaceState({}, '', '/');
     }
@@ -92,6 +103,8 @@ export default function Dashboard() {
     const handleOpenBenefits = () => setActiveSection('benefits');
     const handleOpenDuas = () => setActiveSection('duas');
     const handleOpenStories = () => setActiveSection('stories');
+    const handleOpenIndex = () => setActiveSection('index');
+    const handleOpenActionLog = () => setActiveSection('action-log');
     const handleGoHome = () => setActiveSection('home');
 
     window.addEventListener('open-settings', handleOpenSettings);
@@ -107,6 +120,8 @@ export default function Dashboard() {
     window.addEventListener('open-benefits', handleOpenBenefits);
     window.addEventListener('open-duas', handleOpenDuas);
     window.addEventListener('open-stories', handleOpenStories);
+    window.addEventListener('open-index', handleOpenIndex);
+    window.addEventListener('open-action-log', handleOpenActionLog);
     window.addEventListener('go-home', handleGoHome);
 
     return () => {
@@ -123,6 +138,8 @@ export default function Dashboard() {
       window.removeEventListener('open-benefits', handleOpenBenefits);
       window.removeEventListener('open-duas', handleOpenDuas);
       window.removeEventListener('open-stories', handleOpenStories);
+      window.removeEventListener('open-index', handleOpenIndex);
+      window.removeEventListener('open-action-log', handleOpenActionLog);
       window.removeEventListener('go-home', handleGoHome);
     };
   }, []);
@@ -133,6 +150,19 @@ export default function Dashboard() {
       setShowWelcomeModal(true);
     }
   }, [mounted, state.userName]);
+
+  const handleWelcomeSubmit = (name: string) => {
+    updateUserName(name);
+    setShowWelcomeModal(false);
+    if (!state.hasSeenTour) {
+      setShowTour(true);
+    }
+  };
+
+  const handleTourComplete = () => {
+    setHasSeenTour(true);
+    setShowTour(false);
+  };
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('section-changed', { detail: activeSection }));
@@ -279,10 +309,12 @@ export default function Dashboard() {
     <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24 space-y-8">
       <WelcomeModal 
         isOpen={showWelcomeModal} 
-        onSubmit={(name) => {
-          updateUserName(name);
-          setShowWelcomeModal(false);
-        }} 
+        onSubmit={handleWelcomeSubmit} 
+      />
+      <OnboardingTour 
+        isOpen={showTour} 
+        onComplete={handleTourComplete} 
+        userName={state.userName} 
       />
       
       <header className="bg-white dark:bg-[#1A1D17] p-6 rounded-3xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] relative overflow-hidden transition-colors">
@@ -363,6 +395,8 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {activeSection === 'home' && <StudyTimer />}
 
       <AnimatePresence mode="wait">
         {activeSection === 'search' && (
@@ -589,19 +623,45 @@ export default function Dashboard() {
                   <FileText className="ml-2" size={20} />
                   إحصائيات قرآنية
                 </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
-                    <div className="p-4 bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-full text-[#556B2F] dark:text-[#A3B881] mb-4">
-                      <BookOpen size={32} />
-                    </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">إجمالي كلمات القرآن</p>
-                    <p className="text-3xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.totalWords.toLocaleString('ar-EG')}</p>
-                    <p className="text-xs text-gray-400 mt-2">كلمة (تقريباً)</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">إجمالي الكلمات</p>
+                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.totalWords.toLocaleString('ar-EG')}</p>
                   </motion.div>
-
-                  <div className="lg:col-span-2 bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] transition-colors">
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">إجمالي الحروف</p>
+                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.totalLetters.toLocaleString('ar-EG')}</p>
+                  </motion.div>
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">السور المكية</p>
+                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.makkiSuras}</p>
+                  </motion.div>
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">السور المدنية</p>
+                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.madaniSuras}</p>
+                  </motion.div>
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">أطول سورة</p>
+                    <p className="text-lg font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.longestSura}</p>
+                  </motion.div>
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">أقصر سورة</p>
+                    <p className="text-lg font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.shortestSura}</p>
+                  </motion.div>
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">أطول آية</p>
+                    <p className="text-sm font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.longestAyah}</p>
+                  </motion.div>
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">أقصر آية</p>
+                    <p className="text-sm font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.shortestAyah}</p>
+                  </motion.div>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="lg:col-span-3 bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] transition-colors">
                     <h4 className="text-sm font-bold text-[#556B2F] dark:text-[#A3B881] mb-4">كم مرة ذكرت هذه الكلمات؟</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-y-4 gap-x-6">
                       {QURAN_STATS.wordFrequencies.map((item, index) => (
                         <div key={index} className="flex justify-between items-center border-b border-gray-100 dark:border-[#2C3E18] pb-2">
                           <span className="text-[#3A4D1A] dark:text-[#E5E5D8] font-medium">&quot;{item.word}&quot;</span>
@@ -614,6 +674,8 @@ export default function Dashboard() {
                   </div>
                 </div>
               </section>
+
+              <StudyCalendar />
             </div>
           </motion.div>
         )}
@@ -688,48 +750,80 @@ export default function Dashboard() {
                 </div>
               </section>
             )}
+          </motion.div>
+        )}
 
-            {/* All Suras List */}
-            <section>
-              <h2 className="text-xl font-bold text-[#3A4D1A] dark:text-[#E5E5D8] mb-4 flex items-center">
-                <BookOpen className="ml-2" size={20} />
+        {activeSection === 'index' && (
+          <motion.div
+            key="index"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
+          >
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-2xl font-bold text-[#3A4D1A] dark:text-[#E5E5D8] flex items-center">
+                <BookOpen className="ml-2" size={24} />
                 فهرس السور
               </h2>
-              <div className="bg-white dark:bg-[#1A1D17] rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] overflow-hidden transition-colors">
-                <div className="divide-y divide-[#E5E5D8] dark:divide-[#2C3E18] max-h-[500px] overflow-y-auto">
-                  {displaySuras.map((sura, index) => (
-                    <motion.div
-                      key={sura.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                    >
-                      <Link href={`/sura/${sura.id}`} className="flex items-center justify-between p-4 hover:bg-[#FDFBF7] dark:hover:bg-[#22261F] transition-colors">
-                        <div className="flex items-center space-x-4 space-x-reverse">
-                          <div className="w-10 h-10 rounded-full bg-[#F0F4E8] dark:bg-[#2C3E18] flex items-center justify-center text-[#556B2F] dark:text-[#A3B881] font-bold text-sm">
-                            {sura.id}
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-[#2C3E18] dark:text-[#E5E5D8]">سورة {sura.name}</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{sura.totalAyahs} آية</p>
-                          </div>
+              <button onClick={() => setActiveSection('home')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                <X size={24} className="text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+
+            <div className="relative mb-6">
+              <input
+                type="text"
+                placeholder="ابحث عن سورة..."
+                value={indexSearchQuery}
+                onChange={(e) => setIndexSearchQuery(e.target.value)}
+                className="w-full bg-white dark:bg-[#1A1D17] border border-[#E5E5D8] dark:border-[#2C3E18] rounded-xl pl-4 pr-12 py-3 text-[#2C3E18] dark:text-[#E5E5D8] focus:outline-none focus:ring-2 focus:ring-[#556B2F] dark:focus:ring-[#7A9A45] transition-all"
+              />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            </div>
+
+            <div className="bg-white dark:bg-[#1A1D17] rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] overflow-hidden transition-colors">
+              <div className="divide-y divide-[#E5E5D8] dark:divide-[#2C3E18] max-h-[60vh] overflow-y-auto">
+                {displaySuras
+                  .filter(sura => sura.name.includes(indexSearchQuery) || sura.id.toString().includes(indexSearchQuery))
+                  .map((sura, index) => (
+                  <motion.div
+                    key={sura.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                  >
+                    <Link href={`/sura/${sura.id}`} className="flex items-center justify-between p-4 hover:bg-[#FDFBF7] dark:hover:bg-[#22261F] transition-colors">
+                      <div className="flex items-center space-x-4 space-x-reverse">
+                        <div className="w-10 h-10 rounded-full bg-[#F0F4E8] dark:bg-[#2C3E18] flex items-center justify-center text-[#556B2F] dark:text-[#A3B881] font-bold text-sm">
+                          {sura.id}
                         </div>
-                        <div className="flex items-center space-x-4 space-x-reverse">
-                          {sura.status === 'completed' && (
-                            <div className="flex text-yellow-500 dark:text-yellow-400">
-                              {[...Array(5)].map((_, i) => (
-                                <Star key={i} size={14} fill={i < sura.understandingRating ? "currentColor" : "none"} className={i < sura.understandingRating ? "" : "text-gray-300 dark:text-gray-600"} />
-                              ))}
-                            </div>
-                          )}
-                          <ChevronLeft size={20} className="text-gray-400 dark:text-gray-500" />
+                        <div>
+                          <h3 className="font-bold text-[#2C3E18] dark:text-[#E5E5D8]">سورة {sura.name}</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{sura.totalAyahs} آية</p>
                         </div>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
+                      </div>
+                      <div className="flex items-center space-x-4 space-x-reverse">
+                        {sura.status === 'completed' && (
+                          <div className="flex text-yellow-500 dark:text-yellow-400">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} size={14} fill={i < sura.understandingRating ? "currentColor" : "none"} className={i < sura.understandingRating ? "" : "text-gray-300 dark:text-gray-600"} />
+                            ))}
+                          </div>
+                        )}
+                        <ChevronLeft size={20} className="text-gray-400 dark:text-gray-500" />
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+                {displaySuras.filter(sura => sura.name.includes(indexSearchQuery) || sura.id.toString().includes(indexSearchQuery)).length === 0 && (
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                    لا توجد سور مطابقة للبحث
+                  </div>
+                )}
               </div>
-            </section>
+            </div>
           </motion.div>
         )}
 
@@ -1072,7 +1166,7 @@ export default function Dashboard() {
         )}
 
         {activeSection === 'stories' && (
-          <QuranStoriesSection onBack={() => setActiveSection('home')} />
+          <QuranStoriesSection onBack={() => setActiveSection('home')} initialStoryId={initialStoryId} />
         )}
 
         {activeSection === 'achievements' && (
@@ -1136,6 +1230,18 @@ export default function Dashboard() {
               <h2 className="text-3xl font-bold text-[#2C3E18] dark:text-[#E5E5D8] font-quran">أدعية قرآنية</h2>
             </div>
             <QuranDuas />
+          </motion.div>
+        )}
+
+        {activeSection === 'action-log' && (
+          <motion.div
+            key="action-log"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-4xl mx-auto"
+          >
+            <ActionLogSection onClose={() => setActiveSection('home')} />
           </motion.div>
         )}
       </AnimatePresence>

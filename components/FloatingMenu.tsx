@@ -3,27 +3,35 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, Search, Settings, BarChart2, Plus, Home, Map, Tag, Sparkles, User, Award, Book, Heart, BookOpen, Info, BookOpenCheck } from 'lucide-react';
+import { Menu, X, Settings, BarChart2, Plus, Home, Map, Tag, Sparkles, User, Award, Book, Heart, BookOpen, Info, BookOpenCheck, List, Activity } from 'lucide-react';
 import { useAppContext } from '@/lib/store';
+import { useTimerContext } from '@/components/TimerContext';
 
 export default function FloatingMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { state } = useAppContext();
+  const { hasUnsavedNote, setPendingSectionChange } = useTimerContext();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
   const closeMenu = () => setIsOpen(false);
 
   const handleAction = useCallback((section: string) => {
+    if (hasUnsavedNote) {
+      setPendingSectionChange(section);
+      closeMenu();
+      return;
+    }
+
     if (pathname !== '/') {
       router.push(`/?section=${section}`);
     } else {
       window.dispatchEvent(new CustomEvent(`open-${section}`));
     }
     closeMenu();
-  }, [pathname, router]);
+  }, [pathname, router, hasUnsavedNote, setPendingSectionChange]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,7 +55,6 @@ export default function FloatingMenu() {
   const isSuraPage = pathname.startsWith('/sura/');
 
   const menuItems = [
-    { icon: Search, label: 'البحث', action: () => handleAction('search') },
     { icon: Settings, label: 'الإعدادات', action: () => handleAction('settings') },
     { icon: Info, label: 'عن التطبيق', action: () => handleAction('about-app') },
     { icon: User, label: 'عن المطور', action: () => handleAction('developer') },
@@ -62,10 +69,19 @@ export default function FloatingMenu() {
     menuItems.unshift({ icon: Heart, label: 'فوائد السور', action: () => handleAction('benefits') });
     menuItems.unshift({ icon: Tag, label: 'التصنيفات', action: () => handleAction('categories') });
     menuItems.unshift({ icon: Map, label: 'خطة الدراسة', action: () => handleAction('plan') });
+    menuItems.unshift({ icon: List, label: 'فهرس السور', action: () => handleAction('index') });
     menuItems.unshift({ icon: BarChart2, label: 'الإحصائيات', action: () => handleAction('stats') });
+    menuItems.unshift({ icon: Activity, label: 'سجل النشاطات', action: () => handleAction('action-log') });
   } else if (isSuraPage) {
     menuItems.unshift({ icon: Plus, label: 'إضافة ملاحظة', action: () => { window.dispatchEvent(new CustomEvent('open-add-note')); closeMenu(); } });
-    menuItems.push({ icon: Home, label: 'الرئيسية', action: () => { router.push('/'); closeMenu(); } });
+    menuItems.push({ icon: Home, label: 'الرئيسية', action: () => { 
+      if (hasUnsavedNote) {
+        setPendingSectionChange('home');
+      } else {
+        router.push('/'); 
+      }
+      closeMenu(); 
+    } });
   }
 
   return (

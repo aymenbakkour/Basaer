@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, Map, BarChart2, Menu } from 'lucide-react';
+import { Home, Search, Map, BarChart2, Menu, List } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTimerContext } from '@/components/TimerContext';
 
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('home');
+  const { hasUnsavedNote, setPendingSectionChange } = useTimerContext();
 
   useEffect(() => {
     if (pathname !== '/') {
@@ -42,6 +44,11 @@ export default function BottomNav() {
       return;
     }
 
+    if (hasUnsavedNote) {
+      setPendingSectionChange(tab);
+      return;
+    }
+
     if (pathname !== '/') {
       router.push(`/?section=${tab}`);
     } else {
@@ -56,7 +63,7 @@ export default function BottomNav() {
 
   const navItems = [
     { id: 'home', icon: Home, label: 'الرئيسية' },
-    { id: 'plan', icon: Map, label: 'الخطة' },
+    { id: 'index', icon: List, label: 'فهرس السور' },
     { id: 'search', icon: Search, label: 'البحث' },
     { id: 'stats', icon: BarChart2, label: 'الإحصائيات' },
     { id: 'menu', icon: Menu, label: 'المزيد' },

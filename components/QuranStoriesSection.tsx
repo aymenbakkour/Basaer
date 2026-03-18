@@ -7,8 +7,8 @@ import { QURAN_STORIES } from '@/lib/quran-stories-data';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 
-export default function QuranStoriesSection({ onBack }: { onBack: () => void }) {
-  const [activeStory, setActiveStory] = useState<string>(QURAN_STORIES[0].id);
+export default function QuranStoriesSection({ onBack, initialStoryId }: { onBack: () => void, initialStoryId?: string | null }) {
+  const [activeStory, setActiveStory] = useState<string>(initialStoryId || QURAN_STORIES[0].id);
   const router = useRouter();
   const { markStoryPondered } = useAppContext();
 
