@@ -13,6 +13,13 @@ export const QURAN_STATS = {
   longestAyah: "آية الدّين (البقرة 282)",
   shortestAyah: "مدهامّتان (الرحمن 64)",
   sajdahs: 15,
+  longestWord: "فأسقيناكموه (11 حرفاً - الحجر 22)",
+  middleWord: "وليتلطف (الكهف 19)",
+  prophetsMentioned: 25,
+  suraWithoutBasmala: "التوبة",
+  suraWithTwoBasmalas: "النمل",
+  suraNamedAfterWoman: "مريم",
+  surasNamedAfterProphets: "يونس، هود، يوسف، إبراهيم، محمد، نوح",
   wordFrequencies: [
     { word: "الله", count: 2699 },
     { word: "الرحمن", count: 57 },

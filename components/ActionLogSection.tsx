@@ -6,7 +6,7 @@ import { useAppContext } from '@/lib/store';
 
 export default function ActionLogSection({ onClose }: { onClose: () => void }) {
   const { state } = useAppContext();
-  const { actionLogs } = state;
+  const actionLogs = state.actionLogs || [];
 
   const getActionIcon = (action: string) => {
     if (action.includes('note')) return <FileText size={16} />;

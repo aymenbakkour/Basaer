@@ -16,8 +16,8 @@ import StudyTimer from '@/components/StudyTimer';
 import StudyCalendar from '@/components/StudyCalendar';
 import TajweedSection from '@/components/TajweedSection';
 import AboutAppSection from '@/components/AboutAppSection';
-import DeveloperSection from '@/components/DeveloperSection';
 import QuranStoriesSection from '@/components/QuranStoriesSection';
+import QuranInfoSection from '@/components/QuranInfoSection';
 import ActionLogSection from '@/components/ActionLogSection';
 
 import { BADGES } from '@/lib/badges-data';
@@ -64,7 +64,7 @@ function AchievementsList({ state }: { state: any }) {
 
 export default function Dashboard() {
   const { state, toggleTheme, updateStudyPlan, importData, updateUserName, setHasSeenTour } = useAppContext();
-  const [activeSection, setActiveSection] = useState<'home' | 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles' | 'developer' | 'about-app' | 'tajweed' | 'achievements' | 'benefits' | 'duas' | 'stories' | 'index' | 'action-log'>('home');
+  const [activeSection, setActiveSection] = useState<'home' | 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles' | 'developer' | 'about-app' | 'tajweed' | 'achievements' | 'benefits' | 'duas' | 'stories' | 'index' | 'action-log' | 'quran-info'>('home');
   const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -96,7 +96,6 @@ export default function Dashboard() {
     const handleOpenPlan = () => setActiveSection('plan');
     const handleOpenCategories = () => setActiveSection('categories');
     const handleOpenMiracles = () => setActiveSection('miracles');
-    const handleOpenDeveloper = () => setActiveSection('developer');
     const handleOpenAboutApp = () => setActiveSection('about-app');
     const handleOpenTajweed = () => setActiveSection('tajweed');
     const handleOpenAchievements = () => setActiveSection('achievements');
@@ -105,6 +104,7 @@ export default function Dashboard() {
     const handleOpenStories = () => setActiveSection('stories');
     const handleOpenIndex = () => setActiveSection('index');
     const handleOpenActionLog = () => setActiveSection('action-log');
+    const handleOpenQuranInfo = () => setActiveSection('quran-info');
     const handleGoHome = () => setActiveSection('home');
 
     window.addEventListener('open-settings', handleOpenSettings);
@@ -113,7 +113,6 @@ export default function Dashboard() {
     window.addEventListener('open-plan', handleOpenPlan);
     window.addEventListener('open-categories', handleOpenCategories);
     window.addEventListener('open-miracles', handleOpenMiracles);
-    window.addEventListener('open-developer', handleOpenDeveloper);
     window.addEventListener('open-about-app', handleOpenAboutApp);
     window.addEventListener('open-tajweed', handleOpenTajweed);
     window.addEventListener('open-achievements', handleOpenAchievements);
@@ -122,6 +121,7 @@ export default function Dashboard() {
     window.addEventListener('open-stories', handleOpenStories);
     window.addEventListener('open-index', handleOpenIndex);
     window.addEventListener('open-action-log', handleOpenActionLog);
+    window.addEventListener('open-quran-info', handleOpenQuranInfo);
     window.addEventListener('go-home', handleGoHome);
 
     return () => {
@@ -131,7 +131,6 @@ export default function Dashboard() {
       window.removeEventListener('open-plan', handleOpenPlan);
       window.removeEventListener('open-categories', handleOpenCategories);
       window.removeEventListener('open-miracles', handleOpenMiracles);
-      window.removeEventListener('open-developer', handleOpenDeveloper);
       window.removeEventListener('open-about-app', handleOpenAboutApp);
       window.removeEventListener('open-tajweed', handleOpenTajweed);
       window.removeEventListener('open-achievements', handleOpenAchievements);
@@ -140,6 +139,7 @@ export default function Dashboard() {
       window.removeEventListener('open-stories', handleOpenStories);
       window.removeEventListener('open-index', handleOpenIndex);
       window.removeEventListener('open-action-log', handleOpenActionLog);
+      window.removeEventListener('open-quran-info', handleOpenQuranInfo);
       window.removeEventListener('go-home', handleGoHome);
     };
   }, []);
@@ -172,18 +172,18 @@ export default function Dashboard() {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-  const suras = Object.values(state.suras);
+  const suras = Object.values(state.suras || {});
   let displaySuras = [...suras];
   if (state.studyPlan === 'chronological') {
     displaySuras.sort((a, b) => REVELATION_ORDER.indexOf(a.id) - REVELATION_ORDER.indexOf(b.id));
   } else if (state.studyPlan === 'short_to_long') {
-    displaySuras.sort((a, b) => a.totalAyahs - b.totalAyahs);
+    displaySuras.sort((a, b) => (a.totalAyahs || 0) - (b.totalAyahs || 0));
   } else if (state.studyPlan === 'reverse') {
     displaySuras.sort((a, b) => b.id - a.id);
-  } else if (state.studyPlan === 'custom' && state.customSuraOrder.length > 0) {
+  } else if (state.studyPlan === 'custom' && (state.customSuraOrder || []).length > 0) {
     displaySuras.sort((a, b) => {
-      const indexA = state.customSuraOrder.indexOf(a.id);
-      const indexB = state.customSuraOrder.indexOf(b.id);
+      const indexA = (state.customSuraOrder || []).indexOf(a.id);
+      const indexB = (state.customSuraOrder || []).indexOf(b.id);
       const posA = indexA !== -1 ? indexA : a.id + 1000;
       const posB = indexB !== -1 ? indexB : b.id + 1000;
       return posA - posB;
@@ -194,23 +194,23 @@ export default function Dashboard() {
 
   const completedSuras = suras.filter(s => s.status === 'completed');
   
-  const totalNotes = suras.reduce((acc, sura) => acc + Object.keys(sura.notes).length, 0);
+  const totalNotes = suras.reduce((acc, sura) => acc + Object.keys(sura.notes || {}).length, 0);
   
   const averageUnderstanding = completedSuras.length > 0 
-    ? completedSuras.reduce((acc, sura) => acc + sura.understandingRating, 0) / completedSuras.length 
+    ? completedSuras.reduce((acc, sura) => acc + (sura.understandingRating || 0), 0) / completedSuras.length 
     : 0;
-  const understandingPercentage = Math.round((averageUnderstanding / 5) * 100);
+  const understandingPercentage = Math.round((averageUnderstanding / 5) * 100) || 0;
 
   const totalAyahsInQuran = 6236;
-  const completedAyahs = completedSuras.reduce((acc, sura) => acc + sura.totalAyahs, 0);
-  const quranCompletionPercentage = Math.round((completedAyahs / totalAyahsInQuran) * 100);
+  const completedAyahs = completedSuras.reduce((acc, sura) => acc + (sura.totalAyahs || 0), 0);
+  const quranCompletionPercentage = Math.round((completedAyahs / totalAyahsInQuran) * 100) || 0;
 
   const earnedBadges = BADGES.filter(badge => badge.condition(state));
   const latestBadge = earnedBadges.length > 0 ? earnedBadges[earnedBadges.length - 1] : null;
 
   const recentSuras = [...suras]
-    .filter(s => s.lastModified > 0)
-    .sort((a, b) => b.lastModified - a.lastModified)
+    .filter(s => (s.lastModified || 0) > 0)
+    .sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0))
     .slice(0, 4);
 
   const getRelativeTime = (timestamp: number) => {
@@ -226,7 +226,7 @@ export default function Dashboard() {
   };
 
   const handleExport = () => {
-    const exportedSuras = suras.filter(s => s.status !== 'not_started' || Object.keys(s.notes).length > 0);
+    const exportedSuras = suras.filter(s => s.status !== 'not_started' || Object.keys(s.notes || {}).length > 0);
     
     let content = "بسم الله الرحمن الرحيم\n\n";
     content += "تقرير تطبيق بصائر لمتابعة دراسة وتفسير القرآن الكريم\n";
@@ -242,11 +242,11 @@ export default function Dashboard() {
       const statusAr = sura.status === 'completed' ? 'مكتملة' : sura.status === 'studying' ? 'قيد الدراسة' : 'لم تبدأ';
       content += `الحالة: ${statusAr}`;
       if (sura.status === 'completed') {
-        content += ` | التقييم: ${sura.understandingRating}/5`;
+        content += ` | التقييم: ${sura.understandingRating || 0}/5`;
       }
       content += "\n";
 
-      const notes = Object.values(sura.notes).sort((a, b) => a.timestamp - b.timestamp);
+      const notes = Object.values(sura.notes || {}).sort((a, b) => a.timestamp - b.timestamp);
       if (notes.length > 0) {
         content += "الملاحظات:\n";
         notes.forEach(note => {
@@ -368,7 +368,7 @@ export default function Dashboard() {
             <div className="w-px h-10 bg-[#E5E5D8] dark:bg-[#2C3E18]"></div>
 
             {/* Latest Badge */}
-            <div className="flex flex-1 md:flex-none items-center gap-3 px-2">
+            <button onClick={() => setActiveSection('achievements')} className="flex flex-1 md:flex-none items-center gap-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-colors text-right">
               {latestBadge ? (
                 <>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 ${latestBadge.color}`}>
@@ -390,7 +390,7 @@ export default function Dashboard() {
                   </div>
                 </>
               )}
-            </div>
+            </button>
 
           </div>
         </div>
@@ -537,145 +537,122 @@ export default function Dashboard() {
               </button>
             </div>
             
-            <div className="p-6 space-y-8">
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex items-center space-x-4 space-x-reverse transition-colors">
-                  <div className="p-4 bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-full text-[#556B2F] dark:text-[#A3B881]">
-                    <CheckCircle size={28} />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">السور المنجزة</p>
-                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{completedSuras.length}</p>
-                  </div>
-                </motion.div>
+            <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column: General Stats */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex items-center space-x-4 space-x-reverse transition-colors">
+                    <div className="p-4 bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-full text-[#556B2F] dark:text-[#A3B881]">
+                      <CheckCircle size={28} />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">السور المنجزة</p>
+                      <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{completedSuras.length}</p>
+                    </div>
+                  </motion.div>
 
-                <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex items-center space-x-4 space-x-reverse transition-colors">
-                  <div className="p-4 bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-full text-[#556B2F] dark:text-[#A3B881]">
-                    <Edit3 size={28} />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">إجمالي الملاحظات</p>
-                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{totalNotes}</p>
-                  </div>
-                </motion.div>
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex items-center space-x-4 space-x-reverse transition-colors">
+                    <div className="p-4 bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-full text-[#556B2F] dark:text-[#A3B881]">
+                      <Edit3 size={28} />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">إجمالي الملاحظات</p>
+                      <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{totalNotes}</p>
+                    </div>
+                  </motion.div>
 
-                <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex items-center space-x-4 space-x-reverse transition-colors">
-                  <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        className="text-[#E5E5D8] dark:text-[#2C3E18]"
-                        strokeWidth="3"
-                        stroke="currentColor"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className="text-[#556B2F] dark:text-[#7A9A45]"
-                        strokeWidth="3"
-                        strokeDasharray={`${understandingPercentage}, 100`}
-                        strokeLinecap="round"
-                        stroke="currentColor"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                    </svg>
-                    <div className="absolute text-sm font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{understandingPercentage}%</div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">نسبة الفهم</p>
-                    <p className="text-xs text-gray-400 mt-1">للسور المكتملة</p>
-                  </div>
-                </motion.div>
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex items-center space-x-4 space-x-reverse transition-colors">
+                    <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path
+                          className="text-[#E5E5D8] dark:text-[#2C3E18]"
+                          strokeWidth="3"
+                          stroke="currentColor"
+                          fill="none"
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path
+                          className="text-[#556B2F] dark:text-[#7A9A45]"
+                          strokeWidth="3"
+                          strokeDasharray={`${understandingPercentage}, 100`}
+                          strokeLinecap="round"
+                          stroke="currentColor"
+                          fill="none"
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                      </svg>
+                      <div className="absolute text-sm font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{understandingPercentage}%</div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">نسبة الفهم</p>
+                      <p className="text-xs text-gray-400 mt-1">للسور المكتملة</p>
+                    </div>
+                  </motion.div>
 
-                <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex items-center space-x-4 space-x-reverse transition-colors">
-                  <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        className="text-[#E5E5D8] dark:text-[#2C3E18]"
-                        strokeWidth="3"
-                        stroke="currentColor"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className="text-[#556B2F] dark:text-[#7A9A45]"
-                        strokeWidth="3"
-                        strokeDasharray={`${quranCompletionPercentage}, 100`}
-                        strokeLinecap="round"
-                        stroke="currentColor"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                    </svg>
-                    <div className="absolute text-sm font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{quranCompletionPercentage}%</div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">اكتمال القرآن</p>
-                    <p className="text-xs text-gray-400 mt-1">بناءً على الآيات</p>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Quran Statistics */}
-              <section>
-                <h3 className="text-lg font-bold text-[#3A4D1A] dark:text-[#E5E5D8] mb-4 flex items-center">
-                  <FileText className="ml-2" size={20} />
-                  إحصائيات قرآنية
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">إجمالي الكلمات</p>
-                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.totalWords.toLocaleString('ar-EG')}</p>
-                  </motion.div>
-                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">إجمالي الحروف</p>
-                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.totalLetters.toLocaleString('ar-EG')}</p>
-                  </motion.div>
-                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">السور المكية</p>
-                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.makkiSuras}</p>
-                  </motion.div>
-                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">السور المدنية</p>
-                    <p className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.madaniSuras}</p>
-                  </motion.div>
-                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">أطول سورة</p>
-                    <p className="text-lg font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.longestSura}</p>
-                  </motion.div>
-                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">أقصر سورة</p>
-                    <p className="text-lg font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.shortestSura}</p>
-                  </motion.div>
-                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">أطول آية</p>
-                    <p className="text-sm font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.longestAyah}</p>
-                  </motion.div>
-                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-4 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col items-center justify-center text-center transition-colors">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">أقصر آية</p>
-                    <p className="text-sm font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{QURAN_STATS.shortestAyah}</p>
+                  <motion.div whileHover={{ y: -4 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] flex items-center space-x-4 space-x-reverse transition-colors">
+                    <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path
+                          className="text-[#E5E5D8] dark:text-[#2C3E18]"
+                          strokeWidth="3"
+                          stroke="currentColor"
+                          fill="none"
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path
+                          className="text-[#556B2F] dark:text-[#7A9A45]"
+                          strokeWidth="3"
+                          strokeDasharray={`${quranCompletionPercentage}, 100`}
+                          strokeLinecap="round"
+                          stroke="currentColor"
+                          fill="none"
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                      </svg>
+                      <div className="absolute text-sm font-bold text-[#2C3E18] dark:text-[#E5E5D8]">{quranCompletionPercentage}%</div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">اكتمال القرآن</p>
+                      <p className="text-xs text-gray-400 mt-1">بناءً على الآيات</p>
+                    </div>
                   </motion.div>
                 </div>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <div className="lg:col-span-3 bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] transition-colors">
-                    <h4 className="text-sm font-bold text-[#556B2F] dark:text-[#A3B881] mb-4">كم مرة ذكرت هذه الكلمات؟</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-y-4 gap-x-6">
-                      {QURAN_STATS.wordFrequencies.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center border-b border-gray-100 dark:border-[#2C3E18] pb-2">
-                          <span className="text-[#3A4D1A] dark:text-[#E5E5D8] font-medium">&quot;{item.word}&quot;</span>
-                          <span className="bg-[#F0F4E8] dark:bg-[#2C3E18] text-[#556B2F] dark:text-[#A3B881] px-2 py-0.5 rounded text-sm font-bold">
-                            {item.count}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18]">
+                   <StudyCalendar />
                 </div>
-              </section>
-
-              <StudyCalendar />
+              </div>
+              
+              {/* Right Column: Badges / Achievements summary */}
+              <div className="space-y-6">
+                <div className="bg-[#FDFBF7] dark:bg-[#121410] p-6 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18]">
+                  <h3 className="text-lg font-bold text-[#3A4D1A] dark:text-[#E5E5D8] mb-4 flex items-center">
+                    <Award className="ml-2" size={20} />
+                    أحدث الإنجازات
+                  </h3>
+                  {latestBadge ? (
+                    <div 
+                      className="flex flex-col items-center text-center p-4 bg-white dark:bg-[#1A1D17] rounded-xl border border-[#E5E5D8] dark:border-[#2C3E18] cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2C3E18] transition-colors"
+                      onClick={() => setActiveSection('achievements')}
+                    >
+                      <div className="text-4xl mb-3">{latestBadge.icon}</div>
+                      <h4 className="font-bold text-[#2C3E18] dark:text-[#E5E5D8] mb-1">{latestBadge.title}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{latestBadge.description}</p>
+                    </div>
+                  ) : (
+                    <div className="text-center p-6 bg-white dark:bg-[#1A1D17] rounded-xl border border-[#E5E5D8] dark:border-[#2C3E18]">
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">لم تحصل على شارات بعد. استمر في القراءة!</p>
+                    </div>
+                  )}
+                  
+                  <button 
+                    onClick={() => setActiveSection('achievements')}
+                    className="w-full mt-4 py-2 text-sm font-medium text-[#556B2F] dark:text-[#A3B881] bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-xl hover:bg-[#E5E5D8] dark:hover:bg-[#3A4D1A] transition-colors"
+                  >
+                    عرض كل الإنجازات
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
@@ -742,7 +719,7 @@ export default function Dashboard() {
                               {sura.status === 'completed' ? 'مكتملة' : sura.status === 'studying' ? 'قيد الدراسة' : 'لم تبدأ'}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{Object.keys(sura.notes).length} ملاحظة مدونة</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{Object.keys(sura.notes || {}).length} ملاحظة مدونة</p>
                         </motion.div>
                       </Link>
                     </motion.div>
@@ -979,8 +956,8 @@ export default function Dashboard() {
             </div>
 
             <div className="space-y-4">
-              {Object.entries(state.suras).flatMap(([suraId, sura]) => 
-                Object.entries(sura.notes).map(([noteId, note]) => ({
+              {Object.entries(state.suras || {}).flatMap(([suraId, sura]) => 
+                Object.entries(sura.notes || {}).map(([noteId, note]) => ({
                   suraId: parseInt(suraId),
                   noteId,
                   ...note
@@ -1021,7 +998,7 @@ export default function Dashboard() {
                 );
               })}
               
-              {Object.values(state.suras).every(sura => Object.keys(sura.notes).length === 0) && (
+              {Object.values(state.suras || {}).every(sura => Object.keys(sura.notes || {}).length === 0) && (
                 <div className="text-center py-12 bg-white dark:bg-[#1A1D17] rounded-3xl border border-[#E5E5D8] dark:border-[#2C3E18]">
                   <div className="w-16 h-16 bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-full flex items-center justify-center mx-auto mb-4">
                     <Tag size={24} className="text-[#556B2F] dark:text-[#A3B881]" />
@@ -1153,12 +1130,12 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {activeSection === 'developer' && (
-          <DeveloperSection onBack={() => setActiveSection('home')} />
-        )}
-
         {activeSection === 'about-app' && (
           <AboutAppSection onBack={() => setActiveSection('home')} />
+        )}
+
+        {activeSection === 'quran-info' && (
+          <QuranInfoSection onBack={() => setActiveSection('home')} />
         )}
 
         {activeSection === 'tajweed' && (

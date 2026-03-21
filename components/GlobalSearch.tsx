@@ -48,7 +48,7 @@ export default function GlobalSearch() {
       }
 
       // Search Notes
-      const userSura = state.suras[sura.id];
+      const userSura = state.suras ? state.suras[sura.id] : undefined;
       if (userSura && userSura.notes) {
         Object.values(userSura.notes).forEach(note => {
           if (note.title.includes(lowerQuery) || note.text.includes(lowerQuery)) {

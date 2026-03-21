@@ -40,7 +40,7 @@ export default function StudyCalendar() {
   };
 
   return (
-    <section className="mt-8">
+    <section className="w-full">
       <h3 className="text-lg font-bold text-[#3A4D1A] dark:text-[#E5E5D8] mb-4 flex items-center">
         <CalendarIcon className="ml-2" size={20} />
         سجل الدراسة والوقت

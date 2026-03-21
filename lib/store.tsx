@@ -77,41 +77,45 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem('basaer_data');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      
-      // Migration: Convert old notes (keyed by ayahNumber) to new format
-      Object.values(parsed.suras).forEach((sura: any) => {
-        const newNotes: Record<string, Note> = {};
-        if (sura.notes) {
-          Object.values(sura.notes).forEach((note: any) => {
-            if (note.ayahNumber !== undefined) {
-              const id = `migrated-${note.ayahNumber}`;
-              newNotes[id] = {
-                id,
-                title: `آية ${note.ayahNumber}`,
-                text: note.text,
-                status: note.status,
-                timestamp: Date.now()
-              };
-            } else {
-              newNotes[note.id] = note;
-            }
-          });
-        }
-        sura.notes = newNotes;
-      });
+      try {
+        const parsed = JSON.parse(saved);
+        
+        // Migration: Convert old notes (keyed by ayahNumber) to new format
+        Object.values(parsed.suras || {}).forEach((sura: any) => {
+          const newNotes: Record<string, Note> = {};
+          if (sura.notes) {
+            Object.values(sura.notes).forEach((note: any) => {
+              if (note.ayahNumber !== undefined) {
+                const id = `migrated-${note.ayahNumber}`;
+                newNotes[id] = {
+                  id,
+                  title: `آية ${note.ayahNumber}`,
+                  text: note.text,
+                  status: note.status,
+                  timestamp: Date.now()
+                };
+              } else {
+                newNotes[note.id] = note;
+              }
+            });
+          }
+          sura.notes = newNotes;
+        });
 
-      if (!parsed.theme) parsed.theme = 'light';
-      if (!parsed.studyPlan) parsed.studyPlan = 'default';
-      if (!parsed.customSuraOrder) parsed.customSuraOrder = [];
-      if (parsed.userName === undefined) parsed.userName = '';
-      if (!parsed.ponderedStories) parsed.ponderedStories = [];
-      if (parsed.hasSeenTour === undefined) parsed.hasSeenTour = false;
-      if (!parsed.actionLogs) parsed.actionLogs = [];
-      if (!parsed.studySessions) parsed.studySessions = [];
-      
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState(parsed);
+        if (!parsed.theme) parsed.theme = 'light';
+        if (!parsed.studyPlan) parsed.studyPlan = 'default';
+        if (!parsed.customSuraOrder) parsed.customSuraOrder = [];
+        if (parsed.userName === undefined) parsed.userName = '';
+        if (!parsed.ponderedStories) parsed.ponderedStories = [];
+        if (parsed.hasSeenTour === undefined) parsed.hasSeenTour = false;
+        if (!parsed.actionLogs) parsed.actionLogs = [];
+        if (!parsed.studySessions) parsed.studySessions = [];
+        
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setState(parsed);
+      } catch (e) {
+        console.error("Failed to parse saved data", e);
+      }
     } else {
       // Initialize with default data
       const initialSuras: Record<number, Sura> = {};

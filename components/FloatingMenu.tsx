@@ -52,16 +52,14 @@ export default function FloatingMenu() {
     };
   }, [handleAction]);
 
-  const isSuraPage = pathname.startsWith('/sura/');
+  const isSuraPage = pathname?.startsWith('/sura/') || false;
 
-  const menuItems = [
+  const menuItems: { icon: any; label: string; action: () => void; mobileHidden?: boolean }[] = [
     { icon: Settings, label: 'الإعدادات', action: () => handleAction('settings') },
     { icon: Info, label: 'عن التطبيق', action: () => handleAction('about-app') },
-    { icon: User, label: 'عن المطور', action: () => handleAction('developer') },
   ];
 
   if (pathname === '/') {
-    menuItems.unshift({ icon: Award, label: 'الإنجازات والشارات', action: () => handleAction('achievements') });
     menuItems.unshift({ icon: Sparkles, label: 'الإعجاز القرآني', action: () => handleAction('miracles') });
     menuItems.unshift({ icon: BookOpen, label: 'قصص القرآن', action: () => handleAction('stories') });
     menuItems.unshift({ icon: BookOpenCheck, label: 'أحكام التجويد', action: () => handleAction('tajweed') });
@@ -69,8 +67,9 @@ export default function FloatingMenu() {
     menuItems.unshift({ icon: Heart, label: 'فوائد السور', action: () => handleAction('benefits') });
     menuItems.unshift({ icon: Tag, label: 'التصنيفات', action: () => handleAction('categories') });
     menuItems.unshift({ icon: Map, label: 'خطة الدراسة', action: () => handleAction('plan') });
-    menuItems.unshift({ icon: List, label: 'فهرس السور', action: () => handleAction('index') });
+    menuItems.unshift({ icon: List, label: 'فهرس السور', action: () => handleAction('index'), mobileHidden: true });
     menuItems.unshift({ icon: BarChart2, label: 'الإحصائيات', action: () => handleAction('stats') });
+    menuItems.unshift({ icon: BookOpen, label: 'معلومات قرآنية', action: () => handleAction('quran-info') });
     menuItems.unshift({ icon: Activity, label: 'سجل النشاطات', action: () => handleAction('action-log') });
   } else if (isSuraPage) {
     menuItems.unshift({ icon: Plus, label: 'إضافة ملاحظة', action: () => { window.dispatchEvent(new CustomEvent('open-add-note')); closeMenu(); } });
@@ -164,7 +163,7 @@ export default function FloatingMenu() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                     onClick={item.action}
-                    className="flex items-center gap-4 bg-transparent hover:bg-[#F0F4E8] dark:hover:bg-[#1A1D17] px-4 py-3.5 rounded-2xl transition-all group w-full text-right"
+                    className={`flex items-center gap-4 bg-transparent hover:bg-[#F0F4E8] dark:hover:bg-[#1A1D17] px-4 py-3.5 rounded-2xl transition-all group w-full text-right ${item.mobileHidden ? 'hidden md:flex' : ''}`}
                   >
                     <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2C3E18] border border-[#E5E5D8] dark:border-[#3A4D1A] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#556B2F] dark:group-hover:bg-[#7A9A45] group-hover:border-transparent transition-all">
                       <item.icon size={20} className="text-[#556B2F] dark:text-[#A3B881] group-hover:text-white transition-colors" />

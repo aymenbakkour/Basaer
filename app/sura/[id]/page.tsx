@@ -18,7 +18,7 @@ export default function SuraPage() {
   const { state, updateSuraStatus, updateSuraRating, updateNote, deleteNote } = useAppContext();
   
   const suraId = parseInt(params.id as string);
-  const sura = state.suras[suraId];
+  const sura = state.suras ? state.suras[suraId] : undefined;
   const suraInfo = SURAS_DATA.find(s => s.id === suraId);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -33,7 +33,7 @@ export default function SuraPage() {
     return <div className="p-8 text-center dark:text-gray-300">جاري التحميل...</div>;
   }
 
-  const notesList = Object.values(sura.notes).sort((a, b) => b.timestamp - a.timestamp);
+  const notesList = Object.values(sura.notes || {}).sort((a, b) => b.timestamp - a.timestamp);
 
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6 pb-24">
