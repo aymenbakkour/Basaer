@@ -9,7 +9,6 @@ import Link from 'next/link';
 import { ArrowRight, Save, Star, CheckCircle2, AlertCircle, HelpCircle, Edit3, Plus, Trash2, Info, MapPin, List, BookOpen, Layers, Users, Book, FileText, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { NOTE_CATEGORIES, getCategoryById } from '@/lib/categories';
-import StudyTimer from '@/components/StudyTimer';
 import { useTimerContext } from '@/components/TimerContext';
 
 export default function SuraPage() {
@@ -37,106 +36,116 @@ export default function SuraPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6 pb-24">
-      <StudyTimer compact />
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1A1D17] p-4 pr-20 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] sticky top-4 z-10 gap-4 transition-colors">
-        <div className="flex items-center space-x-4 space-x-reverse">
-          <Link href="/" className="p-2 hover:bg-[#F0F4E8] dark:hover:bg-[#2C3E18] rounded-full text-[#556B2F] dark:text-[#A3B881] transition-colors">
-            <ArrowRight size={24} />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-[#3A4D1A] dark:text-[#E5E5D8]">سورة {sura.name}</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{sura.totalAyahs} آية</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-4 space-x-reverse">
-          <select 
-            value={sura.status}
-            onChange={(e) => {
-              const newStatus = e.target.value as any;
-              if (newStatus === 'completed' && sura.status !== 'completed') {
-                setShowCelebration(true);
-              }
-              updateSuraStatus(suraId, newStatus);
-            }}
-            className="bg-[#FDFBF7] dark:bg-[#121410] border border-[#E5E5D8] dark:border-[#2C3E18] text-[#2C3E18] dark:text-[#E5E5D8] text-sm rounded-lg focus:ring-[#556B2F] dark:focus:ring-[#7A9A45] focus:border-[#556B2F] dark:focus:border-[#7A9A45] block p-2.5 transition-colors"
-          >
-            <option value="not_started">لم تبدأ</option>
-            <option value="studying">قيد الدراسة</option>
-            <option value="completed">مكتملة</option>
-          </select>
-        </div>
-      </header>
+      <header className="relative overflow-hidden bg-gradient-to-br from-[#F0F4E8] to-[#E5E5D8] dark:from-[#1A1D17] dark:to-[#121410] rounded-3xl shadow-sm border border-[#D5E0C5] dark:border-[#2C3E18] mb-6">
+        {/* Decorative background elements */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-[#556B2F] opacity-5 dark:opacity-10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#D4AF37] opacity-5 dark:opacity-10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
 
-      {suraInfo && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#FDFBF7] dark:bg-[#121410] p-5 rounded-2xl border border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col gap-3 transition-colors">
-          <div className="flex items-center gap-2 text-[#556B2F] dark:text-[#A3B881]">
-            <Info size={20} />
-            <h3 className="font-bold text-lg">بطاقة السورة</h3>
+        <div className="relative p-6 sm:p-8 flex flex-col gap-6">
+          {/* Top row: Back button & Status */}
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2 text-[#556B2F] dark:text-[#A3B881] hover:text-[#3A4D1A] dark:hover:text-[#C5D8A4] transition-colors bg-white/50 dark:bg-black/20 px-4 py-2 rounded-full backdrop-blur-sm">
+              <ArrowRight size={20} />
+              <span className="font-medium text-sm">الرئيسية</span>
+            </Link>
+            
+            <div className="flex items-center gap-3">
+              <select 
+                value={sura.status}
+                onChange={(e) => {
+                  const newStatus = e.target.value as any;
+                  if (newStatus === 'completed' && sura.status !== 'completed') {
+                    setShowCelebration(true);
+                  }
+                  updateSuraStatus(suraId, newStatus);
+                }}
+                className="bg-white/80 dark:bg-[#1A1D17]/80 backdrop-blur-sm border border-[#D5E0C5] dark:border-[#3A4D1A] text-[#3A4D1A] dark:text-[#E5E5D8] text-sm font-medium rounded-full focus:ring-2 focus:ring-[#556B2F] dark:focus:ring-[#7A9A45] focus:border-transparent block px-4 py-2 transition-all cursor-pointer outline-none"
+              >
+                <option value="not_started">لم تبدأ</option>
+                <option value="studying">قيد الدراسة</option>
+                <option value="completed">مكتملة</option>
+              </select>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-600 dark:text-gray-400 font-medium">
-            <span className="flex items-center gap-1.5"><MapPin size={16} /> {suraInfo.type}</span>
-            <span className="flex items-center gap-1.5"><List size={16} /> {suraInfo.ayahs} آية</span>
-            <span className="flex items-center gap-1.5"><BookOpen size={16} /> صفحة {suraInfo.page}</span>
-            <span className="flex items-center gap-1.5"><Layers size={16} /> جزء {suraInfo.juz}</span>
-            {suraInfo.words && <span className="flex items-center gap-1.5"><FileText size={16} /> {suraInfo.words} كلمة</span>}
-            {suraInfo.sajdah && <span className="flex items-center gap-1.5 text-[#D4AF37]"><Star size={16} fill="#D4AF37" /> بها سجدة</span>}
+
+          {/* Main Title & Info */}
+          <div className="flex flex-col items-center text-center mt-2">
+            <h1 className="text-4xl sm:text-5xl font-bold text-[#3A4D1A] dark:text-[#E5E5D8] mb-4 font-serif">
+              سورة {sura.name}
+            </h1>
+            
+            {suraInfo && (
+              <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm text-[#556B2F] dark:text-[#A3B881] font-medium bg-white/40 dark:bg-black/20 py-2 px-6 rounded-full backdrop-blur-sm">
+                <span className="flex items-center gap-1.5"><MapPin size={16} /> {suraInfo.type}</span>
+                <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                <span className="flex items-center gap-1.5"><List size={16} /> {suraInfo.ayahs} آية</span>
+                <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                <span className="flex items-center gap-1.5"><BookOpen size={16} /> صفحة {suraInfo.page}</span>
+                <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                <span className="flex items-center gap-1.5"><Layers size={16} /> جزء {suraInfo.juz}</span>
+                {suraInfo.sajdah && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                    <span className="flex items-center gap-1.5 text-[#D4AF37]"><Star size={16} fill="#D4AF37" /> بها سجدة</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-          <p className="text-[#3A4D1A] dark:text-[#E5E5D8] leading-relaxed text-sm mt-1">
-            {suraInfo.description}
-          </p>
-          {(suraInfo.people || suraInfo.stories) && (
-            <div className="mt-2 pt-3 border-t border-[#E5E5D8] dark:border-[#2C3E18] flex flex-col gap-2">
-              {suraInfo.people && (
-                <div className="flex items-start gap-2 text-sm">
-                  <Users size={16} className="text-[#556B2F] dark:text-[#A3B881] mt-0.5 shrink-0" />
-                  <span className="text-gray-600 dark:text-gray-400 font-medium">الأشخاص:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {suraInfo.people.map((person, idx) => {
-                      const storyId = getStoryIdForKeyword(person);
-                      return (
-                        <span key={idx} className="text-[#3A4D1A] dark:text-[#E5E5D8]">
-                          {storyId ? (
-                            <Link href={`/?section=stories&storyId=${storyId}`} className="hover:text-[#556B2F] dark:hover:text-[#A3B881] hover:underline transition-colors">
-                              {person}
-                            </Link>
-                          ) : (
-                            person
-                          )}
-                          {idx < suraInfo.people!.length - 1 && '، '}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              {suraInfo.stories && (
-                <div className="flex items-start gap-2 text-sm">
-                  <Book size={16} className="text-[#556B2F] dark:text-[#A3B881] mt-0.5 shrink-0" />
-                  <span className="text-gray-600 dark:text-gray-400 font-medium">القصص:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {suraInfo.stories.map((story, idx) => {
-                      const storyId = getStoryIdForKeyword(story);
-                      return (
-                        <span key={idx} className="text-[#3A4D1A] dark:text-[#E5E5D8]">
-                          {storyId ? (
-                            <Link href={`/?section=stories&storyId=${storyId}`} className="hover:text-[#556B2F] dark:hover:text-[#A3B881] hover:underline transition-colors">
-                              {story}
-                            </Link>
-                          ) : (
-                            story
-                          )}
-                          {idx < suraInfo.stories!.length - 1 && '، '}
-                        </span>
-                      );
-                    })}
-                  </div>
+
+          {/* Description & Tags */}
+          {suraInfo && (
+            <div className="mt-2 text-center max-w-2xl mx-auto">
+              <p className="text-[#3A4D1A]/80 dark:text-[#E5E5D8]/80 leading-relaxed text-sm sm:text-base">
+                {suraInfo.description}
+              </p>
+              
+              {(suraInfo.people || suraInfo.stories) && (
+                <div className="mt-6 flex flex-col gap-3 items-center justify-center border-t border-[#D5E0C5]/50 dark:border-[#3A4D1A]/50 pt-6">
+                  {suraInfo.people && (
+                    <div className="flex flex-wrap justify-center items-center gap-2 text-sm">
+                      <span className="text-[#556B2F] dark:text-[#A3B881] font-medium flex items-center gap-1.5 bg-white/50 dark:bg-[#1A1D17]/50 px-3 py-1 rounded-full">
+                        <Users size={14} /> الأشخاص:
+                      </span>
+                      {suraInfo.people.map((person, idx) => {
+                        const storyId = getStoryIdForKeyword(person);
+                        return (
+                          <span key={idx} className="text-[#3A4D1A] dark:text-[#E5E5D8] bg-white/30 dark:bg-black/20 px-3 py-1 rounded-full border border-white/20 dark:border-white/5">
+                            {storyId ? (
+                              <Link href={`/?section=stories&storyId=${storyId}`} className="hover:text-[#556B2F] dark:hover:text-[#A3B881] transition-colors">
+                                {person}
+                              </Link>
+                            ) : person}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {suraInfo.stories && (
+                    <div className="flex flex-wrap justify-center items-center gap-2 text-sm">
+                      <span className="text-[#556B2F] dark:text-[#A3B881] font-medium flex items-center gap-1.5 bg-white/50 dark:bg-[#1A1D17]/50 px-3 py-1 rounded-full">
+                        <Book size={14} /> القصص:
+                      </span>
+                      {suraInfo.stories.map((story, idx) => {
+                        const storyId = getStoryIdForKeyword(story);
+                        return (
+                          <span key={idx} className="text-[#3A4D1A] dark:text-[#E5E5D8] bg-white/30 dark:bg-black/20 px-3 py-1 rounded-full border border-white/20 dark:border-white/5">
+                            {storyId ? (
+                              <Link href={`/?section=stories&storyId=${storyId}`} className="hover:text-[#556B2F] dark:hover:text-[#A3B881] transition-colors">
+                                {story}
+                              </Link>
+                            ) : story}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
-        </motion.div>
-      )}
+        </div>
+      </header>
 
       {sura.status === 'completed' && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#F0F4E8] dark:bg-[#1A1D17] p-6 rounded-2xl border border-[#D5E0C5] dark:border-[#2C3E18] flex flex-col items-center justify-center space-y-3 transition-colors">
