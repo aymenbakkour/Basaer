@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
-      <body className="font-sans bg-[#FDFBF7] dark:bg-[#121410] text-[#2C3E18] dark:text-[#E5E5D8] min-h-screen transition-colors duration-300" suppressHydrationWarning>
+      <body className="font-sans bg-[#FDFBF7] dark:bg-[#121410] text-[#2C3E18] dark:text-[#E5E5D8] min-h-screen transition-colors duration-300">
         <AppProvider>
           <TimerProvider>
             {children}

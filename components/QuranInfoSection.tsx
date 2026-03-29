@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { QURAN_STATS } from '@/lib/quran-stats';
 import { ArrowRight, BookOpen } from 'lucide-react';
@@ -7,6 +8,14 @@ interface QuranInfoSectionProps {
 }
 
 export default function QuranInfoSection({ onBack }: QuranInfoSectionProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <motion.div
       key="quran-info"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, X, BookOpen, FileText, Users, Book, ArrowLeft, Sparkles, BookOpenCheck, Heart } from 'lucide-react';
+import { Search, X, BookOpen, FileText, Book, ArrowLeft, Sparkles, BookOpenCheck, Heart } from 'lucide-react';
 import { useAppContext } from '@/lib/store';
 import { SURAS_DATA } from '@/lib/suras-data';
 import { QURAN_STORIES } from '@/lib/quran-stories-data';
@@ -10,7 +10,16 @@ import { TAJWEED_RULES } from '@/lib/tajweed-data';
 import { SURAH_BENEFITS_DATA } from '@/lib/surah-benefits-data';
 import { QURAN_DUAS_DATA } from '@/lib/quran-duas-data';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
+
+interface SearchResult {
+  type: string;
+  id: number | string;
+  noteId?: string;
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+}
 
 export default function GlobalSearch() {
   const [query, setQuery] = useState('');
@@ -28,7 +37,7 @@ export default function GlobalSearch() {
     if (!query.trim()) return [];
 
     const lowerQuery = query.toLowerCase();
-    const results: any[] = [];
+    const results: SearchResult[] = [];
 
     // Search Suras
     SURAS_DATA.forEach(sura => {
@@ -135,7 +144,7 @@ export default function GlobalSearch() {
 
   const results = getResults();
 
-  const handleSelect = (result: any) => {
+  const handleSelect = (result: SearchResult) => {
     if (result.type === 'sura' || result.type === 'note') {
       router.push(`/sura/${result.id}`);
     } else if (result.type === 'story') {

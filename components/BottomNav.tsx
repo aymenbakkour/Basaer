@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, Map, BarChart2, Menu, List } from 'lucide-react';
+import { Home, Search, BarChart2, Menu, List } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTimerContext } from '@/components/TimerContext';
 
@@ -10,9 +10,11 @@ export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('home');
+  const [mounted, setMounted] = useState(false);
   const { hasUnsavedNote, setPendingSectionChange } = useTimerContext();
 
   useEffect(() => {
+    setMounted(true);
     if (pathname !== '/') {
       setActiveTab('');
     } else {
@@ -30,13 +32,16 @@ export default function BottomNav() {
   }, [pathname]);
 
   useEffect(() => {
-    const handleSectionChange = (e: any) => {
-      setActiveTab(e.detail || 'home');
+    const handleSectionChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setActiveTab(customEvent.detail || 'home');
     };
     
     window.addEventListener('section-changed', handleSectionChange);
     return () => window.removeEventListener('section-changed', handleSectionChange);
   }, []);
+
+  if (!mounted) return null;
 
   const handleNav = (tab: string) => {
     if (tab === 'menu') {

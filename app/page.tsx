@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAppContext } from '@/lib/store';
-import { QURAN_STATS } from '@/lib/quran-stats';
+import { useAppContext, AppState } from '@/lib/store';
 import { STUDY_PLANS, REVELATION_ORDER } from '@/lib/study-plans';
-import { NOTE_CATEGORIES, getCategoryById } from '@/lib/categories';
 import { MIRACLES_DATA } from '@/lib/miracles-data';
 import Link from 'next/link';
-import { BookOpen, CheckCircle, Clock, Star, Edit3, ChevronLeft, Download, Upload, User, ExternalLink, Settings, X, Moon, Sun, Calendar, FileText, BarChart2, Search, Map, ArrowUp, ArrowDown, Tag, Sparkles, ExternalLink as ExternalLinkIcon, Book, Award } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Star, Edit3, ChevronLeft, Download, Upload, User, ExternalLink, Settings, X, Moon, Sun, Calendar, FileText, BarChart2, Search, Map, ArrowUp, ArrowDown, Sparkles, ExternalLink as ExternalLinkIcon, Book, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import GlobalSearch from '@/components/GlobalSearch';
 import WelcomeModal from '@/components/WelcomeModal';
@@ -24,7 +22,7 @@ import { BADGES } from '@/lib/badges-data';
 import SurahBenefits from '@/components/SurahBenefits';
 import QuranDuas from '@/components/QuranDuas';
 
-function AchievementsList({ state }: { state: any }) {
+function AchievementsList({ state }: { state: AppState }) {
   return (
     <>
       {BADGES.map((badge) => {
@@ -67,7 +65,6 @@ export default function Dashboard() {
   const [activeSection, setActiveSection] = useState<'home' | 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles' | 'developer' | 'about-app' | 'tajweed' | 'achievements' | 'benefits' | 'duas' | 'stories' | 'index' | 'action-log' | 'quran-info'>('home');
   const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState(new Date());
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedMiracle, setExpandedMiracle] = useState<string | null>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -75,7 +72,6 @@ export default function Dashboard() {
   const [indexSearchQuery, setIndexSearchQuery] = useState('');
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     
     // Check URL parameters for initial section
@@ -85,8 +81,9 @@ export default function Dashboard() {
     if (storyId) {
       setInitialStoryId(storyId);
     }
-    if (section === 'settings' || section === 'stats' || section === 'search' || section === 'plan' || section === 'categories' || section === 'miracles' || section === 'developer' || section === 'about-app' || section === 'tajweed' || section === 'achievements' || section === 'benefits' || section === 'duas' || section === 'stories' || section === 'index' || section === 'action-log') {
-      setActiveSection(section as any);
+    const validSections = ['settings', 'stats', 'search', 'plan', 'categories', 'miracles', 'developer', 'about-app', 'tajweed', 'achievements', 'benefits', 'duas', 'stories', 'index', 'action-log', 'quran-info'];
+    if (section && validSections.includes(section)) {
+      setActiveSection(section as 'settings' | 'stats' | 'search' | 'plan' | 'categories' | 'miracles' | 'developer' | 'about-app' | 'tajweed' | 'achievements' | 'benefits' | 'duas' | 'stories' | 'index' | 'action-log' | 'quran-info');
       window.history.replaceState({}, '', '/');
     }
     
@@ -146,7 +143,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (mounted && state.userName === '') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowWelcomeModal(true);
     }
   }, [mounted, state.userName]);
@@ -173,7 +169,7 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
   const suras = Object.values(state.suras || {});
-  let displaySuras = [...suras];
+  const displaySuras = [...suras];
   if (state.studyPlan === 'chronological') {
     displaySuras.sort((a, b) => REVELATION_ORDER.indexOf(a.id) - REVELATION_ORDER.indexOf(b.id));
   } else if (state.studyPlan === 'short_to_long') {
@@ -250,8 +246,7 @@ export default function Dashboard() {
       if (notes.length > 0) {
         content += "الملاحظات:\n";
         notes.forEach(note => {
-          const noteStatusAr = note.status === 'understood' ? 'مفهوم' : note.status === 'needs_review' ? 'يحتاج مراجعة' : note.status === 'not_understood' ? 'غير مفهوم' : 'بدون وسم';
-          content += `- ${note.title} [${noteStatusAr}]:\n  ${note.text}\n`;
+          content += `- ${note.title}:\n  ${note.text}\n`;
         });
       }
       content += "--------------------------------------------------\n\n";
@@ -269,16 +264,41 @@ export default function Dashboard() {
   };
 
   const handleBackup = () => {
-    const backupData = JSON.stringify(state, null, 2);
-    const blob = new Blob([backupData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `basaer_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      const backupData = JSON.stringify(state, null, 2);
+      const blob = new Blob([backupData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `basaer_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to backup data. Checking for cyclic structures...", err);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const safeStringify = (obj: any) => {
+        const cache = new Set();
+        return JSON.stringify(obj, (key, value) => {
+          if (typeof value === 'object' && value !== null) {
+            if (cache.has(value)) return;
+            cache.add(value);
+          }
+          return value;
+        }, 2);
+      };
+      const backupData = safeStringify(state);
+      const blob = new Blob([backupData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `basaer_backup_safe_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   };
 
   const handleRestore = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -297,13 +317,15 @@ export default function Dashboard() {
         } else {
           alert('ملف النسخ الاحتياطي غير صالح');
         }
-      } catch (error) {
+      } catch {
         alert('حدث خطأ أثناء قراءة الملف');
       }
     };
     reader.readAsText(file);
     event.target.value = '';
   };
+
+  if (!mounted) return null;
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24 space-y-8">
@@ -909,14 +931,14 @@ export default function Dashboard() {
 
         {activeSection === 'categories' && (
           <motion.div
-            key="categories"
+            key="all-notes"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className="space-y-6"
           >
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">التصنيفات</h2>
+              <h2 className="text-2xl font-bold text-[#2C3E18] dark:text-[#E5E5D8]">جميع الملاحظات</h2>
               <button
                 onClick={() => setActiveSection('home')}
                 className="flex items-center gap-2 text-sm font-medium text-[#556B2F] dark:text-[#A3B881] hover:text-[#3A4D1A] dark:hover:text-[#C5D8A4] transition-colors"
@@ -926,48 +948,17 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="flex flex-wrap gap-3 mb-8">
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`px-4 py-2 rounded-full font-medium transition-all ${
-                  selectedCategory === null
-                    ? 'bg-[#556B2F] text-white dark:bg-[#7A9A45]'
-                    : 'bg-white dark:bg-[#1A1D17] text-gray-600 dark:text-gray-300 border border-[#E5E5D8] dark:border-[#2C3E18] hover:border-[#556B2F] dark:hover:border-[#7A9A45]'
-                }`}
-              >
-                الكل
-              </button>
-              {NOTE_CATEGORIES.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full font-medium transition-all ${
-                    selectedCategory === cat.id
-                      ? 'bg-[#556B2F] text-white dark:bg-[#7A9A45]'
-                      : 'bg-white dark:bg-[#1A1D17] text-gray-600 dark:text-gray-300 border border-[#E5E5D8] dark:border-[#2C3E18] hover:border-[#556B2F] dark:hover:border-[#7A9A45]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`w-3 h-3 rounded-full ${cat.color.split(' ')[0]}`}></span>
-                    {cat.name}
-                  </div>
-                </button>
-              ))}
-            </div>
-
             <div className="space-y-4">
               {Object.entries(state.suras || {}).flatMap(([suraId, sura]) => 
-                Object.entries(sura.notes || {}).map(([noteId, note]) => ({
+                Object.entries(sura?.notes || {}).map(([noteId, note]) => ({
                   suraId: parseInt(suraId),
                   noteId,
                   ...note
                 }))
               )
-              .filter(note => selectedCategory === null || note.category === selectedCategory)
               .sort((a, b) => b.timestamp - a.timestamp)
               .map(note => {
                 const sura = state.suras[note.suraId];
-                const cat = getCategoryById(note.category);
                 return (
                   <Link href={`/sura/${note.suraId}`} key={`${note.suraId}-${note.noteId}`}>
                     <div className="bg-white dark:bg-[#1A1D17] p-5 rounded-2xl shadow-sm border border-[#E5E5D8] dark:border-[#2C3E18] hover:border-[#556B2F] dark:hover:border-[#7A9A45] transition-all group">
@@ -976,7 +967,7 @@ export default function Dashboard() {
                           <h3 className="font-bold text-lg text-[#3A4D1A] dark:text-[#E5E5D8] group-hover:text-[#556B2F] dark:group-hover:text-[#A3B881] transition-colors">
                             {note.title || 'ملاحظة بدون عنوان'}
                           </h3>
-                          <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                          <div className="flex items-center gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
                             <BookOpen size={14} />
                             <span>سورة {sura?.name}</span>
                             <span>•</span>
@@ -984,12 +975,9 @@ export default function Dashboard() {
                             <span>{new Date(note.timestamp).toLocaleDateString('ar-SA')}</span>
                           </div>
                         </div>
-                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${cat.color}`}>
-                          {cat.name}
-                        </span>
                       </div>
                       {note.text && (
-                        <p className="text-[#2C3E18] dark:text-gray-300 text-sm line-clamp-2 mt-2">
+                        <p className="text-[#2C3E18] dark:text-gray-300 text-sm line-clamp-2 mt-3 p-3 bg-[#F0F4E8]/50 dark:bg-[#121410] rounded-xl border border-[#E5E5D8]/50 dark:border-[#2C3E18]/50">
                           {note.text}
                         </p>
                       )}
@@ -998,13 +986,13 @@ export default function Dashboard() {
                 );
               })}
               
-              {Object.values(state.suras || {}).every(sura => Object.keys(sura.notes || {}).length === 0) && (
+              {Object.values(state.suras || {}).every(sura => Object.keys(sura?.notes || {}).length === 0) && (
                 <div className="text-center py-12 bg-white dark:bg-[#1A1D17] rounded-3xl border border-[#E5E5D8] dark:border-[#2C3E18]">
                   <div className="w-16 h-16 bg-[#F0F4E8] dark:bg-[#2C3E18] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Tag size={24} className="text-[#556B2F] dark:text-[#A3B881]" />
+                    <FileText size={24} className="text-[#556B2F] dark:text-[#A3B881]" />
                   </div>
                   <h3 className="text-lg font-bold text-[#2C3E18] dark:text-[#E5E5D8] mb-2">لا توجد ملاحظات</h3>
-                  <p className="text-gray-500 dark:text-gray-400">ابدأ بإضافة ملاحظات وتصنيفها لتظهر هنا</p>
+                  <p className="text-gray-500 dark:text-gray-400">ابدأ بإضافة ملاحظاتك لتظهر هنا</p>
                 </div>
               )}
             </div>

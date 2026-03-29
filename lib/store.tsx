@@ -18,9 +18,7 @@ export interface Note {
   id: string;
   title: string;
   text: string;
-  status: AyahStatus;
   timestamp: number;
-  category?: string;
 }
 
 export interface Sura {
@@ -39,7 +37,7 @@ export interface StudySession {
   timestamp: number;
 }
 
-interface AppState {
+export interface AppState {
   suras: Record<number, Sura>;
   theme: Theme;
   studyPlan: string;
@@ -49,6 +47,8 @@ interface AppState {
   hasSeenTour: boolean;
   actionLogs: ActionLog[];
   studySessions: StudySession[];
+  lastTimerStart?: number; // timestamp when timer started
+  lastActiveTime?: number; // last time the app was active while timer was running
 }
 
 interface AppContextType {
@@ -56,7 +56,7 @@ interface AppContextType {
   isLoaded: boolean;
   updateSuraStatus: (id: number, status: SuraStatus) => void;
   updateSuraRating: (id: number, rating: number) => void;
-  updateNote: (suraId: number, noteId: string, title: string, text: string, status: AyahStatus, category?: string) => void;
+  updateNote: (suraId: number, noteId: string, title: string, text: string) => void;
   deleteNote: (suraId: number, noteId: string) => void;
   toggleTheme: () => void;
   updateStudyPlan: (plan: string, customOrder?: number[]) => void;
@@ -66,12 +66,14 @@ interface AppContextType {
   setHasSeenTour: (seen: boolean) => void;
   logAction: (action: string, details: string) => void;
   addStudySession: (durationMinutes: number) => void;
+  setTimerStart: (timestamp: number | undefined) => void;
+  updateLastActiveTime: (timestamp: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AppState>({ suras: {}, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [], hasSeenTour: false, actionLogs: [], studySessions: [] });
+  const [state, setState] = useState<AppState>({ suras: {}, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [], hasSeenTour: false, actionLogs: [], studySessions: [], lastTimerStart: undefined });
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -81,25 +83,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(saved);
         
         // Migration: Convert old notes (keyed by ayahNumber) to new format
-        Object.values(parsed.suras || {}).forEach((sura: any) => {
+        Object.values(parsed.suras || {}).forEach((sura: unknown) => {
+          const suraObj = sura as Sura;
           const newNotes: Record<string, Note> = {};
-          if (sura.notes) {
-            Object.values(sura.notes).forEach((note: any) => {
-              if (note.ayahNumber !== undefined) {
-                const id = `migrated-${note.ayahNumber}`;
+          if (suraObj.notes) {
+            Object.values(suraObj.notes).forEach((note: unknown) => {
+              const noteObj = note as Note & { ayahNumber?: number };
+              if (noteObj.ayahNumber !== undefined) {
+                const id = `migrated-${noteObj.ayahNumber}`;
                 newNotes[id] = {
                   id,
-                  title: `آية ${note.ayahNumber}`,
-                  text: note.text,
-                  status: note.status,
+                  title: `آية ${noteObj.ayahNumber}`,
+                  text: noteObj.text,
                   timestamp: Date.now()
                 };
               } else {
-                newNotes[note.id] = note;
+                newNotes[noteObj.id] = noteObj;
               }
             });
           }
-          sura.notes = newNotes;
+          suraObj.notes = newNotes;
         });
 
         if (!parsed.theme) parsed.theme = 'light';
@@ -110,8 +113,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (parsed.hasSeenTour === undefined) parsed.hasSeenTour = false;
         if (!parsed.actionLogs) parsed.actionLogs = [];
         if (!parsed.studySessions) parsed.studySessions = [];
+        if (parsed.lastTimerStart === undefined) parsed.lastTimerStart = undefined;
+        if (parsed.lastActiveTime === undefined) parsed.lastActiveTime = undefined;
         
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setState(parsed);
       } catch (e) {
         console.error("Failed to parse saved data", e);
@@ -130,14 +134,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           totalAyahs: s.ayahs
         };
       });
-      setState({ suras: initialSuras, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [], hasSeenTour: false, actionLogs: [], studySessions: [] });
+      setState({ suras: initialSuras, theme: 'light', studyPlan: 'default', customSuraOrder: [], userName: '', ponderedStories: [], hasSeenTour: false, actionLogs: [], studySessions: [], lastTimerStart: undefined, lastActiveTime: undefined });
     }
     setIsLoaded(true);
   }, []);
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('basaer_data', JSON.stringify(state));
+      try {
+        localStorage.setItem('basaer_data', JSON.stringify(state));
+      } catch (error) {
+        console.error("Failed to stringify state for localStorage. Checking for cyclic structures...", error);
+        // Fallback to a safer stringify if cyclic structure is detected
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const safeStringify = (obj: any) => {
+          const cache = new Set();
+          return JSON.stringify(obj, (key, value) => {
+            if (typeof value === 'object' && value !== null) {
+              if (cache.has(value)) {
+                console.warn(`Circular reference detected at key: ${key}`);
+                return; // Discard circular reference
+              }
+              cache.add(value);
+            }
+            return value;
+          });
+        };
+        localStorage.setItem('basaer_data', safeStringify(state));
+      }
+      
       if (state.theme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
@@ -196,7 +221,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  const updateNote = (suraId: number, noteId: string, title: string, text: string, status: AyahStatus, category?: string) => {
+  const updateNote = (suraId: number, noteId: string, title: string, text: string) => {
     setState(prev => {
       const sura = prev.suras[suraId];
       const newNotes = { ...sura.notes };
@@ -205,8 +230,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         id: noteId, 
         title, 
         text, 
-        status, 
-        category: category || newNotes[noteId]?.category,
         timestamp: newNotes[noteId]?.timestamp || Date.now() 
       };
       
@@ -282,6 +305,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addStudySession = (durationMinutes: number) => {
+    if (durationMinutes <= 0) return;
     setState(prev => ({
       ...prev,
       studySessions: [
@@ -296,10 +320,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  if (!isLoaded) return null; // Prevent hydration mismatch
+  const setTimerStart = (timestamp: number | undefined) => {
+    setState(prev => ({ ...prev, lastTimerStart: timestamp, lastActiveTime: timestamp }));
+  };
+
+  const updateLastActiveTime = (timestamp: number) => {
+    setState(prev => ({ ...prev, lastActiveTime: timestamp }));
+  };
 
   return (
-    <AppContext.Provider value={{ state, isLoaded, updateSuraStatus, updateSuraRating, updateNote, deleteNote, toggleTheme, updateStudyPlan, importData, updateUserName, markStoryPondered, setHasSeenTour, logAction, addStudySession }}>
+    <AppContext.Provider value={{ state, isLoaded, updateSuraStatus, updateSuraRating, updateNote, deleteNote, toggleTheme, updateStudyPlan, importData, updateUserName, markStoryPondered, setHasSeenTour, logAction, addStudySession, setTimerStart, updateLastActiveTime }}>
       {children}
     </AppContext.Provider>
   );

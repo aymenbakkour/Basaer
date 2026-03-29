@@ -1,10 +1,12 @@
+import { AppState, Sura } from './store';
+
 export interface Badge {
   id: string;
   title: string;
   description: string;
   icon: string; // emoji or lucide icon name
   color: string;
-  condition: (state: any) => boolean;
+  condition: (state: AppState) => boolean;
 }
 
 export const BADGES: Badge[] = [
@@ -15,7 +17,7 @@ export const BADGES: Badge[] = [
     icon: '🌟',
     color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
     condition: (state) => {
-      const completed = Object.values(state.suras || {}).filter((s: any) => s.status === 'completed');
+      const completed = Object.values(state.suras || {}).filter((s: Sura) => s.status === 'completed');
       return completed.length >= 1;
     }
   },
@@ -26,7 +28,7 @@ export const BADGES: Badge[] = [
     icon: '🚀',
     color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
     condition: (state) => {
-      const completed = Object.values(state.suras || {}).filter((s: any) => s.status === 'completed');
+      const completed = Object.values(state.suras || {}).filter((s: Sura) => s.status === 'completed');
       return completed.length >= 10;
     }
   },
@@ -37,7 +39,7 @@ export const BADGES: Badge[] = [
     icon: '🌓',
     color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
     condition: (state) => {
-      const completed = Object.values(state.suras || {}).filter((s: any) => s.status === 'completed');
+      const completed = Object.values(state.suras || {}).filter((s: Sura) => s.status === 'completed');
       return completed.length >= 57;
     }
   },
@@ -48,7 +50,7 @@ export const BADGES: Badge[] = [
     icon: '👑',
     color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
     condition: (state) => {
-      const completed = Object.values(state.suras || {}).filter((s: any) => s.status === 'completed');
+      const completed = Object.values(state.suras || {}).filter((s: Sura) => s.status === 'completed');
       return completed.length >= 114;
     }
   },
@@ -59,7 +61,7 @@ export const BADGES: Badge[] = [
     icon: '✍️',
     color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
     condition: (state) => {
-      const totalNotes = Object.values(state.suras || {}).reduce((acc: number, sura: any) => acc + Object.keys(sura.notes || {}).length, 0);
+      const totalNotes = Object.values(state.suras || {}).reduce((acc: number, sura: Sura) => acc + Object.keys(sura.notes || {}).length, 0);
       return totalNotes >= 1;
     }
   },
@@ -70,7 +72,7 @@ export const BADGES: Badge[] = [
     icon: '📚',
     color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
     condition: (state) => {
-      const totalNotes = Object.values(state.suras || {}).reduce((acc: number, sura: any) => acc + Object.keys(sura.notes || {}).length, 0);
+      const totalNotes = Object.values(state.suras || {}).reduce((acc: number, sura: Sura) => acc + Object.keys(sura.notes || {}).length, 0);
       return totalNotes >= 50;
     }
   },
@@ -81,7 +83,7 @@ export const BADGES: Badge[] = [
     icon: '🧠',
     color: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
     condition: (state) => {
-      const highRating = Object.values(state.suras || {}).filter((s: any) => s.understandingRating === 5);
+      const highRating = Object.values(state.suras || {}).filter((s: Sura) => s.understandingRating === 5);
       return highRating.length >= 5;
     }
   },

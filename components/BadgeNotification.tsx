@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppContext } from '@/lib/store';
-import { BADGES } from '@/lib/badges-data';
+import { BADGES, Badge } from '@/lib/badges-data';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -10,7 +10,7 @@ import confetti from 'canvas-confetti';
 export default function BadgeNotification() {
   const { state } = useAppContext();
   const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
-  const [currentNotification, setCurrentNotification] = useState<any | null>(null);
+  const [currentNotification, setCurrentNotification] = useState<Badge | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -27,7 +27,23 @@ export default function BadgeNotification() {
         }
       });
       setEarnedBadges(initialEarned);
-      localStorage.setItem('earnedBadges', JSON.stringify(initialEarned));
+      try {
+        localStorage.setItem('earnedBadges', JSON.stringify(initialEarned));
+      } catch (err) {
+        console.error("Failed to stringify initialEarned badges. Checking for cyclic structures...", err);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const safeStringify = (obj: any) => {
+          const cache = new Set();
+          return JSON.stringify(obj, (key, value) => {
+            if (typeof value === 'object' && value !== null) {
+              if (cache.has(value)) return;
+              cache.add(value);
+            }
+            return value;
+          });
+        };
+        localStorage.setItem('earnedBadges', safeStringify(initialEarned));
+      }
     }
     setIsLoaded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -36,7 +52,7 @@ export default function BadgeNotification() {
   useEffect(() => {
     if (!isLoaded) return;
 
-    const newlyEarned: any[] = [];
+    const newlyEarned: Badge[] = [];
     const updatedEarnedBadges = [...earnedBadges];
 
     BADGES.forEach((badge) => {
@@ -48,7 +64,23 @@ export default function BadgeNotification() {
 
     if (newlyEarned.length > 0) {
       setEarnedBadges(updatedEarnedBadges);
-      localStorage.setItem('earnedBadges', JSON.stringify(updatedEarnedBadges));
+      try {
+        localStorage.setItem('earnedBadges', JSON.stringify(updatedEarnedBadges));
+      } catch (err) {
+        console.error("Failed to stringify updatedEarnedBadges. Checking for cyclic structures...", err);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const safeStringify = (obj: any) => {
+          const cache = new Set();
+          return JSON.stringify(obj, (key, value) => {
+            if (typeof value === 'object' && value !== null) {
+              if (cache.has(value)) return;
+              cache.add(value);
+            }
+            return value;
+          });
+        };
+        localStorage.setItem('earnedBadges', safeStringify(updatedEarnedBadges));
+      }
       
       // Show the first newly earned badge
       setCurrentNotification(newlyEarned[0]);

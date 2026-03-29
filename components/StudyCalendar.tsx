@@ -1,16 +1,23 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAppContext } from '@/lib/store';
 import { Calendar as CalendarIcon, Clock } from 'lucide-react';
 
 export default function StudyCalendar() {
   const { state } = useAppContext();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   const sessions = state.studySessions || [];
 
   // Calculate total time
   const totalMinutes = sessions.reduce((acc, session) => acc + session.durationMinutes, 0);
-  const totalHours = Math.floor(totalMinutes / 60);
-  const remainingMinutes = totalMinutes % 60;
 
   // Calculate daily, monthly, yearly stats
   const now = new Date();

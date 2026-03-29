@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const https = require('https');
 
@@ -46,7 +47,7 @@ https.get('https://api.alquran.cloud/v1/quran/quran-simple-clean', (res) => {
     // Update each sura object
     for (let i = 1; i <= 114; i++) {
       const regex = new RegExp(`(\\{ id: ${i}, [^\\}]+)(\\})`);
-      content = content.replace(regex, (match, p1, p2) => {
+      content = content.replace(regex, (match, p1) => {
         if (p1.includes('words:')) return match; // already updated
         return `${p1}, words: ${stats[i].words}, sajdah: ${stats[i].sajdah} }`;
       });

@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, Settings, BarChart2, Plus, Home, Map, Tag, Sparkles, User, Award, Book, Heart, BookOpen, Info, BookOpenCheck, List, Activity } from 'lucide-react';
+import { Menu, X, Settings, BarChart2, Plus, Home, Map, Sparkles, Book, Heart, BookOpen, Info, BookOpenCheck, List, Activity, FileText } from 'lucide-react';
 import { useAppContext } from '@/lib/store';
 import { useTimerContext } from '@/components/TimerContext';
 
 export default function FloatingMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { state } = useAppContext();
@@ -34,6 +35,7 @@ export default function FloatingMenu() {
   }, [pathname, router, hasUnsavedNote, setPendingSectionChange]);
 
   useEffect(() => {
+    setMounted(true);
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
@@ -54,7 +56,9 @@ export default function FloatingMenu() {
 
   const isSuraPage = pathname?.startsWith('/sura/') || false;
 
-  const menuItems: { icon: any; label: string; action: () => void; mobileHidden?: boolean }[] = [
+  if (!mounted) return null;
+
+  const menuItems: { icon: React.ElementType; label: string; action: () => void; mobileHidden?: boolean }[] = [
     { icon: Settings, label: 'الإعدادات', action: () => handleAction('settings') },
     { icon: Info, label: 'عن التطبيق', action: () => handleAction('about-app') },
   ];
@@ -65,8 +69,8 @@ export default function FloatingMenu() {
     menuItems.unshift({ icon: BookOpenCheck, label: 'أحكام التجويد', action: () => handleAction('tajweed') });
     menuItems.unshift({ icon: Book, label: 'أدعية قرآنية', action: () => handleAction('duas') });
     menuItems.unshift({ icon: Heart, label: 'فوائد السور', action: () => handleAction('benefits') });
-    menuItems.unshift({ icon: Tag, label: 'التصنيفات', action: () => handleAction('categories') });
     menuItems.unshift({ icon: Map, label: 'خطة الدراسة', action: () => handleAction('plan') });
+    menuItems.unshift({ icon: FileText, label: 'جميع الملاحظات', action: () => handleAction('categories') });
     menuItems.unshift({ icon: List, label: 'فهرس السور', action: () => handleAction('index'), mobileHidden: true });
     menuItems.unshift({ icon: BarChart2, label: 'الإحصائيات', action: () => handleAction('stats') });
     menuItems.unshift({ icon: BookOpen, label: 'معلومات قرآنية', action: () => handleAction('quran-info') });

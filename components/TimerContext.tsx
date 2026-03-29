@@ -1,16 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAppContext } from '@/lib/store';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2 } from 'lucide-react';
 
 interface TimerContextType {
-  timerSeconds: number; // remaining time if countdown, or elapsed if countup
+  timerSeconds: number;
   isTimerRunning: boolean;
-  isCountdown: boolean;
-  initialDuration: number;
-  startTimer: (durationSeconds?: number) => void;
+  startTimer: () => void;
   pauseTimer: () => void;
   resetTimer: () => void;
   hasUnsavedNote: boolean;
@@ -23,71 +21,86 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export function TimerProvider({ children }: { children: React.ReactNode }) {
   const [timerSeconds, setTimerSeconds] = useState(0);
-  const [initialDuration, setInitialDuration] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [isCountdown, setIsCountdown] = useState(false);
   const [hasUnsavedNote, setHasUnsavedNote] = useState(false);
   const [pendingSectionChange, setPendingSectionChange] = useState<string | null>(null);
   const [showNotification, setShowNotification] = useState(false);
-  const prevTimerRef = useRef(timerSeconds);
+  const [lastSessionMinutes, setLastSessionMinutes] = useState(0);
   
-  const { addStudySession } = useAppContext();
+  const { state, addStudySession, setTimerStart, isLoaded, updateLastActiveTime } = useAppContext();
+
+  // Handle persistence and "closure" calculation
+  useEffect(() => {
+    if (isLoaded && state.lastTimerStart) {
+      const startTime = state.lastTimerStart;
+      const endTime = state.lastActiveTime || Date.now();
+      const elapsedSeconds = Math.floor((endTime - startTime) / 1000);
+      const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+      
+      if (elapsedMinutes > 0) {
+        addStudySession(elapsedMinutes);
+        setLastSessionMinutes(elapsedMinutes);
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000);
+      }
+      
+      // Clear the timer start since we've "closed" that session
+      setTimerStart(undefined);
+    }
+  }, [isLoaded, state.lastTimerStart, state.lastActiveTime, addStudySession, setTimerStart]); // Only run once when app loads and data is ready
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isTimerRunning) {
+    let activeTimeInterval: NodeJS.Timeout;
+    
+    if (isTimerRunning && state.lastTimerStart) {
       interval = setInterval(() => {
-        setTimerSeconds((prev) => {
-          if (isCountdown) {
-            if (prev <= 1) {
-              setIsTimerRunning(false);
-              return 0;
-            }
-            return prev - 1;
-          } else {
-            return prev + 1;
-          }
-        });
+        const now = Date.now();
+        const elapsed = Math.floor((now - state.lastTimerStart!) / 1000);
+        setTimerSeconds(elapsed);
       }, 1000);
+      
+      // Update last active time every 10 seconds
+      activeTimeInterval = setInterval(() => {
+        updateLastActiveTime(Date.now());
+      }, 10000);
+    } else {
+      setTimerSeconds(0);
     }
     return () => {
       if (interval) clearInterval(interval);
+      if (activeTimeInterval) clearInterval(activeTimeInterval);
     };
-  }, [isTimerRunning, isCountdown]);
+  }, [isTimerRunning, state.lastTimerStart, updateLastActiveTime]);
 
-  useEffect(() => {
-    // Check if countdown finished
-    if (isCountdown && prevTimerRef.current > 0 && timerSeconds === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setShowNotification(true);
-      const durationMinutes = Math.round(initialDuration / 60);
-      if (durationMinutes > 0) {
-        addStudySession(durationMinutes);
-      }
-      setTimeout(() => setShowNotification(false), 5000);
-    }
-    prevTimerRef.current = timerSeconds;
-  }, [timerSeconds, isCountdown, initialDuration, addStudySession]);
-
-  const startTimer = (durationSeconds?: number) => {
-    if (durationSeconds !== undefined) {
-      setTimerSeconds(durationSeconds);
-      setInitialDuration(durationSeconds);
-      setIsCountdown(true);
-    } else if (timerSeconds === 0 && !isCountdown) {
-      // Starting from 0 as countup
-      setIsCountdown(false);
-    }
+  const startTimer = () => {
+    const now = Date.now();
+    setTimerStart(now);
     setIsTimerRunning(true);
   };
 
-  const pauseTimer = () => setIsTimerRunning(false);
+  const pauseTimer = () => {
+    if (state.lastTimerStart) {
+      const now = Date.now();
+      const elapsedSeconds = Math.floor((now - state.lastTimerStart) / 1000);
+      const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+      
+      if (elapsedMinutes > 0) {
+        addStudySession(elapsedMinutes);
+        setLastSessionMinutes(elapsedMinutes);
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000);
+      }
+    }
+    setIsTimerRunning(false);
+    setTimerStart(undefined);
+    setTimerSeconds(0);
+  };
   
   const resetTimer = () => {
     setIsTimerRunning(false);
+    setTimerStart(undefined);
     setTimerSeconds(0);
-    setInitialDuration(0);
-    setIsCountdown(false);
   };
 
   return (
@@ -95,8 +108,6 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       value={{
         timerSeconds,
         isTimerRunning,
-        isCountdown,
-        initialDuration,
         startTimer,
         pauseTimer,
         resetTimer,
@@ -117,8 +128,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           >
             <CheckCircle2 className="text-[#556B2F] dark:text-[#A3B881]" size={24} />
             <div>
-              <h4 className="font-bold">انتهى وقت الدراسة!</h4>
-              <p className="text-sm opacity-90">تم تسجيل {Math.round(initialDuration / 60)} دقيقة في سجل دراستك.</p>
+              <h4 className="font-bold">تم تسجيل وقت الدراسة!</h4>
+              <p className="text-sm opacity-90">تم إضافة {lastSessionMinutes} دقيقة إلى سجلك.</p>
             </div>
           </motion.div>
         )}
